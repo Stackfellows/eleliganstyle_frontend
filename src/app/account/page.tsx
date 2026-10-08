@@ -60,6 +60,13 @@ export default function AccountPage() {
               <Heart className="w-4 h-4" />
               <span>Saved Vault</span>
             </Link>
+            <Link
+              href="/login"
+              className="w-full text-left py-3 px-4 flex items-center gap-3 border border-[#ECE7E6] bg-[#FCFAF9] text-[#A21D21] hover:bg-[#F8F5F4] transition-colors block"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </Link>
           </div>
 
           {/* Tab Content */}
@@ -98,7 +105,7 @@ export default function AccountPage() {
                   </div>
                   <div className="flex justify-between text-[#6E6767] pt-1">
                     <span>Lumière Hydrating Nectar Serum x 1</span>
-                    <span>$135.00</span>
+                    <span>PKR 37,800</span>
                   </div>
                 </div>
               </div>

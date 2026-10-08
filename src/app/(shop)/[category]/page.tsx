@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import ProductGrid from '@/components/product/ProductGrid';
 import { getProducts } from '@/lib/services/productService';
-import { getCategoryBySlug, getAudienceSectionBySlug } from '@/lib/services/categoryService';
-import { MainCategory, Audience, Product } from '@/lib/types';
+import { getCategoryBySlug, getAudienceSectionBySlug, getSubcategoryMeta } from '@/lib/services/categoryService';
+import { MainCategory, Audience, SubCategory, Product } from '@/lib/types';
 
 interface PageProps {
   params: Promise<{
@@ -16,18 +16,26 @@ export async function generateMetadata({ params }: PageProps) {
   const { category: slug } = await params;
   const mainCategory = getCategoryBySlug(slug);
   const audience = getAudienceSectionBySlug(slug);
+  const subcategory = getSubcategoryMeta(slug);
 
   if (mainCategory) {
     return {
-      title: `${mainCategory.name} — Luxury Collection`,
+      title: `${mainCategory.name} — Luxury Collection | ELEGANTSTYLE`,
       description: mainCategory.description,
     };
   }
 
   if (audience) {
     return {
-      title: `${audience.name} Line — Curated Elegance`,
+      title: `${audience.name} Line — Curated Elegance | ELEGANTSTYLE`,
       description: audience.description,
+    };
+  }
+
+  if (subcategory) {
+    return {
+      title: `${subcategory.name} — Luxury Collection | ELEGANTSTYLE`,
+      description: subcategory.description,
     };
   }
 
@@ -41,8 +49,9 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const mainCategory = getCategoryBySlug(slug);
   const audience = getAudienceSectionBySlug(slug);
+  const subcategory = getSubcategoryMeta(slug);
 
-  if (!mainCategory && !audience) {
+  if (!mainCategory && !audience && !subcategory) {
     notFound();
   }
 
@@ -61,6 +70,11 @@ export default async function CategoryPage({ params }: PageProps) {
     title = `${audience.name} Collection`;
     tagline = audience.tagline;
     description = audience.description;
+  } else if (subcategory) {
+    products = getProducts({ subcategory: subcategory.slug });
+    title = subcategory.name;
+    tagline = subcategory.tagline;
+    description = subcategory.description;
   }
 
   const breadcrumbs = [

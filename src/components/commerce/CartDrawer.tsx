@@ -249,7 +249,7 @@ export default function CartDrawer() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-[#6E6767]">
                     <span>Estimated Shipping</span>
-                    <span>{remainingForFreeShipping === 0 ? 'FREE' : '$15.00'}</span>
+                    <span>{remainingForFreeShipping === 0 ? 'FREE' : formatPrice(15)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-[#171515] font-medium pt-2 border-t border-[#ECE7E6]">
                     <span>Total</span>

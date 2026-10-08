@@ -5,7 +5,10 @@ export type SubCategory =
   | 'skin-care'
   | 'belts'
   | 'wallets'
-  | 'hair-care';
+  | 'hair-care'
+  | 'hand-bags'
+  | 'school-belts'
+  | 'deals';
 
 export type Audience = 'women' | 'men' | 'children';
 

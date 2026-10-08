@@ -30,6 +30,8 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  if (pathname?.startsWith('/admin')) return null;
+
   return (
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-300 ${
@@ -51,22 +53,86 @@ export default function Header() {
         </div>
 
         {/* Left / Logo */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center shrink-0">
           <Link
             href="/"
-            className="group flex flex-col items-center lg:items-start tracking-[0.25em] text-[#171515]"
+            className="group flex flex-col items-center lg:items-start tracking-[0.2em] text-[#171515]"
           >
-            <span className="font-serif text-xl sm:text-2xl font-light uppercase tracking-[0.2em] transition-opacity group-hover:opacity-80">
+            <span className="font-serif text-lg sm:text-xl font-light uppercase tracking-[0.18em] transition-opacity group-hover:opacity-80 leading-tight">
               ELEGANTSTYLE
             </span>
-            <span className="text-[9px] tracking-[0.35em] text-[#6E6767] uppercase font-sans -mt-1 font-light">
+            <span className="text-[8px] sm:text-[8.5px] tracking-[0.28em] text-[#6E6767] uppercase font-sans font-light">
               LUXURY BEAUTY & FASHION
             </span>
           </Link>
         </div>
 
         {/* Center / Nav Items (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-8 text-xs uppercase tracking-[0.18em] font-sans text-[#171515]">
+        <nav className="hidden lg:flex items-center gap-3.5 xl:gap-6 text-[11px] xl:text-xs uppercase tracking-[0.12em] xl:tracking-[0.16em] font-sans text-[#171515] whitespace-nowrap">
+          {/* Deals & Discounts Dropdown */}
+          <div
+            className="relative py-2 group"
+            onMouseEnter={() => setActiveDropdown('deals')}
+            onMouseLeave={() => setActiveDropdown(null)}
+          >
+            <Link
+              href="/deals"
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium ${
+                pathname.startsWith('/deals') ? 'border-b border-[#171515] pb-0.5 text-[#C58C97]' : ''
+              }`}
+            >
+              <span className="text-[#C58C97] font-semibold">Deals & Discounts</span>
+              <ChevronDown className="w-3 h-3 text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
+            </Link>
+
+            {activeDropdown === 'deals' && (
+              <div className="absolute top-full left-0 w-72 bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="text-[10px] text-[#C58C97] tracking-widest border-b border-[#ECE7E6] pb-2 font-medium flex items-center justify-between">
+                  <span>CURATED SUITES</span>
+                  <span>SAVE UP TO 35%</span>
+                </div>
+                <ul className="space-y-3 font-normal normal-case text-sm text-[#292526]">
+                  <li>
+                    <Link
+                      href="/deals/bridal-makeup-deals"
+                      className="hover:text-[#C58C97] transition-colors block py-0.5 font-serif"
+                    >
+                      Bridal Makeup Deals
+                      <span className="block text-[10px] font-sans text-[#6E6767]">Save 35% on full wedding bridal suites</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/deals/party-makeup-deals"
+                      className="hover:text-[#C58C97] transition-colors block py-0.5 font-serif"
+                    >
+                      Party Makeup Deals
+                      <span className="block text-[10px] font-sans text-[#6E6767]">High-glamour nocturnal soirée sets</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/deals/makeup-deals"
+                      className="hover:text-[#C58C97] transition-colors block py-0.5 font-serif"
+                    >
+                      Makeup Deals
+                      <span className="block text-[10px] font-sans text-[#6E6767]">Parisian silk lip & skin fluid bundles</span>
+                    </Link>
+                  </li>
+                </ul>
+                <div className="pt-2 border-t border-[#ECE7E6]">
+                  <Link
+                    href="/deals"
+                    className="text-[11px] uppercase tracking-widest text-[#171515] hover:text-[#C58C97] transition-colors font-medium flex items-center justify-between"
+                  >
+                    <span>View All Privileges</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Beauty Category Dropdown */}
           <div
             className="relative py-2 group"
@@ -76,7 +142,7 @@ export default function Header() {
             <Link
               href="/beauty"
               className={`flex items-center gap-1 transition-colors hover:text-[#6E6767] py-1 ${
-                pathname.startsWith('/beauty') ? 'border-b border-[#171515] pb-0.5' : ''
+                pathname.startsWith('/beauty') || pathname.startsWith('/makeup') || pathname.startsWith('/skincare') ? 'border-b border-[#171515] pb-0.5' : ''
               }`}
             >
               Beauty & Cosmetics
@@ -128,7 +194,7 @@ export default function Header() {
             <Link
               href="/fashion"
               className={`flex items-center gap-1 transition-colors hover:text-[#6E6767] py-1 ${
-                pathname.startsWith('/fashion') ? 'border-b border-[#171515] pb-0.5' : ''
+                pathname.startsWith('/fashion') || pathname.startsWith('/belts') || pathname.startsWith('/hand-bags') || pathname.startsWith('/wallets') ? 'border-b border-[#171515] pb-0.5' : ''
               }`}
             >
               Fashion & Style
@@ -138,7 +204,7 @@ export default function Header() {
             {activeDropdown === 'fashion' && (
               <div className="absolute top-full left-0 w-64 bg-[#FFFFFF] border border-[#ECE7E6] shadow-lg p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                 <div className="text-[10px] text-[#6E6767] tracking-widest border-b border-[#ECE7E6] pb-2 font-medium">
-                  LEATHER GOODS
+                  LEATHER GOODS & ACCESSORIES
                 </div>
                 <ul className="space-y-3 font-normal normal-case text-sm text-[#292526]">
                   <li>
@@ -146,7 +212,7 @@ export default function Header() {
                       href="/fashion/belts"
                       className="hover:text-[#C58C97] transition-colors block py-0.5"
                     >
-                      Italian Calfskin Belts
+                      Calfskin Belts
                     </Link>
                   </li>
                   <li>
@@ -155,6 +221,22 @@ export default function Header() {
                       className="hover:text-[#C58C97] transition-colors block py-0.5"
                     >
                       Saddle Leather Wallets
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/fashion/hand-bags"
+                      className="hover:text-[#C58C97] transition-colors block py-0.5"
+                    >
+                      Hand Bags & Totes
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/fashion/school-belts"
+                      className="hover:text-[#C58C97] transition-colors block py-0.5"
+                    >
+                      Academy School Belts
                     </Link>
                   </li>
                 </ul>
@@ -190,13 +272,14 @@ export default function Header() {
             Children
           </Link>
 
+          {/* Reviews & Suggestions Link */}
           <Link
-            href="/journal"
+            href="/reviews-suggestions"
             className={`transition-colors hover:text-[#6E6767] py-1 ${
-              pathname.startsWith('/journal') ? 'border-b border-[#171515] pb-0.5' : ''
+              pathname.startsWith('/reviews-suggestions') ? 'border-b border-[#171515] pb-0.5' : ''
             }`}
           >
-            Journal
+            Reviews & Suggestions
           </Link>
         </nav>
 

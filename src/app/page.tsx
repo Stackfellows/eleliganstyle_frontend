@@ -1,6 +1,7 @@
 import React from 'react';
 import HeroSection from '@/components/home/HeroSection';
 import CategoryShowcase from '@/components/home/CategoryShowcase';
+import DealsSection from '@/components/home/DealsSection';
 import AudienceSection from '@/components/home/AudienceSection';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
 import BrandStory from '@/components/home/BrandStory';
@@ -36,6 +37,7 @@ export default function HomePage() {
       <div className="space-y-0">
         <HeroSection />
         <CategoryShowcase />
+        <DealsSection />
         <AudienceSection />
         <FeaturedProducts />
         <BrandStory />
