@@ -51,7 +51,7 @@ export default function HeroSection() {
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-4 font-sans text-xs uppercase tracking-[0.2em]">
             <Link
-              href="/beauty"
+              href="/collections"
               className="bg-[#171515] text-[#FCFAF9] py-4 px-8 flex items-center gap-3 hover:bg-[#292526] transition-all hover:gap-4 shadow-sm"
             >
               <span>Shop Collection</span>

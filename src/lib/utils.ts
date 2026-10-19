@@ -6,12 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(price);
+  const pkrAmount = price < 1000 ? Math.round(price * 280) : Math.round(price);
+  return `₨ ${pkrAmount.toLocaleString('en-PK')}`;
 }
 
 export function calculateDiscountPercentage(price: number, originalPrice?: number): number | null {

@@ -251,7 +251,7 @@ export default function CartPage() {
               Explore our botanical skincare and Italian calfskin leather goods collections.
             </p>
             <Link
-              href="/beauty"
+              href="/collections"
               className="inline-block bg-[#171515] text-[#FCFAF9] text-xs uppercase tracking-widest py-3.5 px-8 hover:bg-[#292526] transition-colors"
             >
               Explore Shop Collection

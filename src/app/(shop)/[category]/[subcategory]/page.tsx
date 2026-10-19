@@ -23,10 +23,11 @@ export async function generateMetadata({ params }: SubcategoryPageProps) {
 
 export default async function SubcategoryPage({ params }: SubcategoryPageProps) {
   const { category, subcategory } = await params;
+  const normalizedSub = subcategory === 'skincare' ? 'skin-care' : subcategory;
 
   // Fetch products matching category and subcategory
   let products = getProducts({
-    subcategory: subcategory as SubCategory,
+    subcategory: normalizedSub as SubCategory,
   });
 
   // Filter further by mainCategory or audience if applicable

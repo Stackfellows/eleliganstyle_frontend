@@ -48,6 +48,18 @@ export const CATEGORIES: Category[] = [
         name: 'Wallets',
         description: 'Bifold wallets, zip compact purses, and slim cardholders crafted from saddle leather.',
         image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=1200&auto=format&fit=crop'
+      },
+      {
+        slug: 'hand-bags',
+        name: 'Hand Bags',
+        description: 'Sculptural top-handle bags, calfskin shoulder totes, and evening pochettes crafted in Tuscany.',
+        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1200&auto=format&fit=crop'
+      },
+      {
+        slug: 'school-belts',
+        name: 'School Belts',
+        description: 'Durable full-grain leather school belts and academy uniforms belts built with reinforced stitching.',
+        image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=1200&auto=format&fit=crop'
       }
     ]
   }
@@ -58,9 +70,9 @@ export const AUDIENCE_SECTIONS = [
     slug: 'women',
     name: 'Women',
     tagline: 'Sensual Elegance & Luminous Care',
-    description: 'Explore radiant skincare elixirs, silk lip colors, and refined zip compact wallets.',
+    description: 'Explore radiant skincare elixirs, silk lip colors, calfskin handbags, and refined zip compact wallets.',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop',
-    subcategories: ['makeup', 'skin-care', 'wallets', 'belts']
+    subcategories: ['makeup', 'skin-care', 'wallets', 'belts', 'hand-bags']
   },
   {
     slug: 'men',
@@ -73,9 +85,9 @@ export const AUDIENCE_SECTIONS = [
   {
     slug: 'children',
     name: 'Children',
-    tagline: 'Gentle Pure Botanical Care',
-    description: 'Pediatrician-tested soothing balms and tear-free oat cleansers crafted for child skin.',
+    tagline: 'Gentle Pure Botanical Care & Essentials',
+    description: 'Pediatrician-tested soothing balms, tear-free oat cleansers, and durable school leather belts.',
     image: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=1200&auto=format&fit=crop',
-    subcategories: ['skin-care', 'hair-care']
+    subcategories: ['skin-care', 'hair-care', 'school-belts']
   }
 ];

@@ -5,7 +5,10 @@ export type SubCategory =
   | 'skin-care'
   | 'belts'
   | 'wallets'
-  | 'hair-care';
+  | 'hair-care'
+  | 'hand-bags'
+  | 'school-belts'
+  | 'deals';
 
 export type Audience = 'women' | 'men' | 'children';
 
@@ -38,6 +41,8 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
+  productCode?: string;
+  discount?: number;
   rating: number;
   reviewCount: number;
   mainCategory: MainCategory;

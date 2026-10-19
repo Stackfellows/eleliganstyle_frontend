@@ -6,10 +6,13 @@
     --bg-secondary: #FCFAF9;
     --bg-tertiary: #F8F5F4;
     
-    --pink-soft: #F8E8EA;
-    --pink-mid: #F3DDE0;
-    --pink-deep: #E9C9CE;
-    --pink-dark: #C58C97;
+    --pink-soft: #F4F6EE;
+    --pink-mid: #E8ECE0;
+    --pink-deep: #D0D9C0;
+    --pink-dark: #6B7C52;
+    --olive-light: #8A9D6A;
+    --olive-dark: #556340;
+    --olive-accent: #6B7C52;
 
     --text-primary: #171515;
     --text-secondary: #292526;
@@ -34,7 +37,7 @@
   }
 
   ::selection {
-    background-color: #F8E8EA;
+    background-color: #E8ECE0;
     color: #171515;
   }
 }

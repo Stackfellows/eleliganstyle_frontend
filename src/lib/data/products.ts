@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
       'Glass packaging with 100% recyclable cap'
     ],
     usageInstructions: 'Apply 3-4 drops onto freshly cleansed face and neck every morning and evening. Press gently with warm fingertips until fully absorbed.',
-    shippingInfo: 'Complimentary carbon-neutral express shipping on all orders over $150. Delivers in 2-3 business days.',
+    shippingInfo: 'Complimentary carbon-neutral express shipping on all orders over PKR 15,000. Delivers in 2-3 business days.',
     isFeatured: true,
     inStock: true,
     createdAt: '2026-01-15',
@@ -177,7 +177,7 @@ export const PRODUCTS: Product[] = [
       'Subtle natural vanilla blossom note'
     ],
     usageInstructions: 'Lather a small pump onto wet hair and body. Rinse thoroughly with lukewarm water.',
-    shippingInfo: 'Complimentary shipping over $150.',
+    shippingInfo: 'Complimentary shipping over PKR 15,000.',
     isFeatured: true,
     inStock: true,
     createdAt: '2026-02-12'
@@ -260,7 +260,7 @@ export const PRODUCTS: Product[] = [
       'Dewy natural finish'
     ],
     usageInstructions: 'Shake bottle well. Smooth 2-3 drops over skin using fingertips or foundation brush.',
-    shippingInfo: 'Complimentary shipping over $150.',
+    shippingInfo: 'Complimentary shipping over PKR 15,000.',
     isFeatured: false,
     inStock: true,
     createdAt: '2026-02-05'
@@ -474,9 +474,252 @@ export const PRODUCTS: Product[] = [
       'Ophthalmologist tested'
     ],
     usageInstructions: 'Dab small dot around eye orbital bone using ceramic applicator twice daily.',
-    shippingInfo: 'Complimentary shipping over $150.',
+    shippingInfo: 'Complimentary shipping over PKR 15,000.',
     isFeatured: false,
     inStock: true,
     createdAt: '2026-02-14'
+  },
+
+  // FASHION & STYLE - HAND BAGS (WOMEN)
+  {
+    id: 'prod-13',
+    slug: 'palais-luxury-calfskin-handbag',
+    name: 'Palais Structured Calfskin Handbag',
+    subtitle: 'Florentine Full-Grain Leather & Gold-Plated Clasp',
+    description: 'An architectural statement piece handcrafted in Florence. Features structured top handles, detachable crossbody strap, suede interior lining, and lock hardware.',
+    price: 540,
+    originalPrice: 620,
+    rating: 5.0,
+    reviewCount: 38,
+    mainCategory: 'fashion',
+    subcategory: 'hand-bags',
+    audience: ['women'],
+    badge: 'BEST SELLER',
+    images: [
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1200&auto=format&fit=crop'
+    ],
+    materials: [
+      '100% Full-Grain Tuscan Calfskin Leather',
+      'Custom 24K Gold-Plated Hardware',
+      'Alcantara & Italian Suede Interior'
+    ],
+    variants: [
+      { id: 'vh-01', name: 'Nero Classic', sku: 'PL-01', inStock: true, colorHex: '#141414' },
+      { id: 'vh-02', name: 'Caramel Siena', sku: 'PL-02', inStock: true, colorHex: '#A0633B' },
+      { id: 'vh-03', name: 'Blush Cream', sku: 'PL-03', inStock: true, colorHex: '#E8D4D0' }
+    ],
+    details: [
+      'Dimensions: 28cm x 21cm x 12cm',
+      'Includes detachable adjustable leather shoulder strap (100-115cm)',
+      'Protective metal feet at base',
+      'Interior zippered safety pocket and dual card holders'
+    ],
+    usageInstructions: 'Protect with rain-guard spray and keep filled with archival tissue when stored in dust bag.',
+    shippingInfo: 'Complimentary insured express shipping & luxury velvet presentation box.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-02-15'
+  },
+  {
+    id: 'prod-14',
+    slug: 'margaux-italian-leather-tote',
+    name: 'Margaux Everyday Leather Tote',
+    subtitle: 'Ultra-Soft Pebble Leather & Magnetic Closure',
+    description: 'Effortless capacity meets minimalist Parisian restraint. Accommodates 14-inch laptops, cosmetics pouch, and daily essentials with weightless drape.',
+    price: 480,
+    rating: 4.8,
+    reviewCount: 24,
+    mainCategory: 'fashion',
+    subcategory: 'hand-bags',
+    audience: ['women'],
+    badge: 'NEW',
+    images: [
+      'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1200&auto=format&fit=crop'
+    ],
+    materials: [
+      'Italian Pebble Grain Calfskin',
+      'Brushed Palladium Trim',
+      'Bonded Suede Lining'
+    ],
+    details: [
+      'Dimensions: 36cm x 29cm x 15cm',
+      'Includes removable zippered interior organizer clutch',
+      'Reinforced comfort shoulder handles'
+    ],
+    shippingInfo: 'Complimentary express delivery.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-02-20'
+  },
+
+  // FASHION & STYLE - SCHOOL BELTS (CHILDREN / ACADEMY)
+  {
+    id: 'prod-15',
+    slug: 'academie-classic-school-belt',
+    name: 'Académie Classic Leather School Belt',
+    subtitle: 'Reinforced Full-Grain Leather with Nickel-Free Buckle',
+    description: 'Engineered specifically for academy uniforms and daily school wear. Features resilient vegetable-tanned leather, smooth rounded edges, and hypoallergenic nickel-free buckle.',
+    price: 85,
+    originalPrice: 110,
+    rating: 4.9,
+    reviewCount: 42,
+    mainCategory: 'fashion',
+    subcategory: 'school-belts',
+    audience: ['children'],
+    badge: 'BEST SELLER',
+    images: [
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1624222247344-550fb60583dc?q=80&w=1200&auto=format&fit=crop'
+    ],
+    materials: [
+      'Heavy-Duty Full-Grain Cowhide Leather',
+      'Nickel-Free Hypoallergenic Brass Buckle',
+      'Reinforced Waxed Double Stitching'
+    ],
+    variants: [
+      { id: 'vs-01', name: 'School Uniform Black / 65cm (Ages 6-9)', sku: 'SB-01-65', inStock: true, size: '65cm' },
+      { id: 'vs-02', name: 'School Uniform Black / 75cm (Ages 10-14)', sku: 'SB-01-75', inStock: true, size: '75cm' },
+      { id: 'vs-03', name: 'Uniform Dark Brown / 70cm', sku: 'SB-02-70', inStock: true, size: '70cm' }
+    ],
+    details: [
+      'Width: 28mm / 1.1 inches (uniform regulation compliant)',
+      'Heavy-duty scratch-resistant leather finish',
+      '5 adjustment holes for easy growing room',
+      'Debossed name identification tag area on inside'
+    ],
+    usageInstructions: 'Wipe clean with a damp cloth. Withstands daily playground and classroom activity.',
+    shippingInfo: 'Fast 2-3 day shipping. Easy size exchange within 30 days.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-01-18'
+  },
+  {
+    id: 'prod-16',
+    slug: 'junior-heritage-all-weather-belt',
+    name: 'Junior Heritage All-Weather Belt',
+    subtitle: 'Weather-Resistant Saddle Leather for Students',
+    description: 'A versatile belt that transitions seamlessly from the school uniform to weekend festivities. Crafted for durability and effortless buckling.',
+    price: 75,
+    rating: 4.8,
+    reviewCount: 31,
+    mainCategory: 'fashion',
+    subcategory: 'school-belts',
+    audience: ['children'],
+    badge: 'NEW',
+    images: [
+      'https://images.unsplash.com/photo-1624222247344-550fb60583dc?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=1200&auto=format&fit=crop'
+    ],
+    materials: [
+      'Treated Water-Resistant Saddle Leather',
+      'Satin Gunmetal Solid Steel Buckle'
+    ],
+    variants: [
+      { id: 'vj-01', name: 'Academy Navy Blue / 70cm', sku: 'JH-01-70', inStock: true, size: '70cm' },
+      { id: 'vj-02', name: 'Classic Black / 75cm', sku: 'JH-02-75', inStock: true, size: '75cm' }
+    ],
+    details: [
+      'Width: 30mm',
+      'Reinforced leather keeper loop',
+      'Hand-finished beveled edges'
+    ],
+    shippingInfo: 'Standard 2-4 day shipping.',
+    isFeatured: false,
+    inStock: true,
+    createdAt: '2026-02-02'
+  },
+
+  // DEALS & DISCOUNT BUNDLE PRODUCTS
+  {
+    id: 'prod-17',
+    slug: 'royal-bridal-couture-suite',
+    name: 'Royal Bridal Couture Suite Deal',
+    subtitle: 'Complete 5-Piece Ceremony & Reception Radiance Trunk',
+    description: 'The definitive bridal collection with exclusive 35% discount privilege. Engineered to endure emotional vows, flash photography, and evening celebration with flawless radiance.',
+    price: 247,
+    originalPrice: 380,
+    rating: 5.0,
+    reviewCount: 56,
+    mainCategory: 'beauty',
+    subcategory: 'deals',
+    audience: ['women'],
+    badge: 'BEST SELLER',
+    images: [
+      'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1200&auto=format&fit=crop'
+    ],
+    details: [
+      'Includes Éclat Mineral Glow Fluid Tint (Full Size)',
+      'Includes Rouge Opéra Satin Silk Lipstick (Nude Élégance)',
+      'Includes Sublime Rose Illuminating Primer Serum',
+      'Includes Velours Translucent Micro-Setting Silk Powder',
+      'Includes Keepsake Italian Leather Bridal Vanity Case',
+      'Exclusive 35% OFF Bridal Special Privilege'
+    ],
+    shippingInfo: 'Complimentary insured express shipping & luxury gift trunk.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-02-22'
+  },
+  {
+    id: 'prod-18',
+    slug: 'nocturne-glamour-gala-set',
+    name: 'Nocturne Gala Party Makeup Deal',
+    subtitle: 'Dramatic Bold Lip & Starlight Micro-Pigment Highlighter',
+    description: 'Turn heads at every gala and party soiree. Combines our high-impact Rouge Opéra in Scarlet with prismatic pearlescent dust and 12-hour defining mascara at 30% savings.',
+    price: 147,
+    originalPrice: 210,
+    rating: 4.9,
+    reviewCount: 39,
+    mainCategory: 'beauty',
+    subcategory: 'deals',
+    audience: ['women'],
+    badge: 'LIMITED',
+    images: [
+      'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1200&auto=format&fit=crop'
+    ],
+    details: [
+      'Includes Rouge Opéra Lipstick in Scarlet Opéra',
+      'Includes Starlight Prismatic Champagne Highlighter',
+      'Includes Precision Smudge-Proof Gel Liner Pen',
+      'Includes Velours Golden Evening Velvet Pouch',
+      'Exclusive 30% OFF Party Special Privilege'
+    ],
+    shippingInfo: 'Complimentary express delivery.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-02-23'
+  },
+  {
+    id: 'prod-19',
+    slug: 'parisian-everyday-perfection-bundle',
+    name: 'Everyday Parisian Chic Makeup Deal',
+    subtitle: 'Weightless Fresh Mineral Complexion & Silk Lip',
+    description: 'Indulge in effortless French beauty. Our two most acclaimed makeup formulas paired together at 30% discount.',
+    price: 98,
+    originalPrice: 140,
+    rating: 4.9,
+    reviewCount: 67,
+    mainCategory: 'beauty',
+    subcategory: 'deals',
+    audience: ['women'],
+    badge: 'AWARD WINNER',
+    images: [
+      'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?q=80&w=1200&auto=format&fit=crop'
+    ],
+    details: [
+      'Includes Éclat Mineral Glow Fluid Tint',
+      'Includes Rouge Opéra Satin Silk Lipstick',
+      'Exclusive 30% OFF Archive Deal Privilege'
+    ],
+    shippingInfo: 'Complimentary shipping over PKR 15,000.',
+    isFeatured: true,
+    inStock: true,
+    createdAt: '2026-02-24'
   }
 ];

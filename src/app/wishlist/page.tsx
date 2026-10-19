@@ -71,7 +71,7 @@ export default function WishlistPage() {
               Tap the heart icon on any formulation or leather accessory to save it here.
             </p>
             <Link
-              href="/beauty"
+              href="/collections"
               className="inline-block bg-[#171515] text-[#FCFAF9] text-xs uppercase tracking-widest py-3.5 px-8 hover:bg-[#292526] transition-colors"
             >
               Explore Shop Collection

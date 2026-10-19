@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Heart, User, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Search, Heart, User, ShoppingBag, ArrowRight, Sparkles, Truck, MessageSquare } from 'lucide-react';
 import { useUI } from '@/lib/context/UIContext';
 import { useCart } from '@/lib/context/CartContext';
 import { useWishlist } from '@/lib/context/WishlistContext';
@@ -36,7 +36,7 @@ export default function NavigationDrawer() {
           >
             {/* Header */}
             <div>
-              <div className="flex items-center justify-between border-b border-[#ECE7E6] pb-5 mb-8">
+              <div className="flex items-center justify-between border-b border-[#ECE7E6] pb-5 mb-6">
                 <div className="flex flex-col">
                   <span className="font-serif text-lg tracking-[0.2em] font-light uppercase">
                     ELEGANTSTYLE
@@ -56,111 +56,164 @@ export default function NavigationDrawer() {
 
               {/* Navigation Links */}
               <nav className="space-y-6 font-serif text-2xl font-light text-[#171515]">
+                {/* DEALS & DISCOUNTS SECTION */}
+                <div className="p-4 bg-[#171515] text-[#FCFAF9] space-y-3">
+                  <div className="flex items-center justify-between text-[#E9C9CE]">
+                    <span className="text-[10px] font-sans font-medium tracking-[0.25em] uppercase flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-[#E9C9CE]" />
+                      Deals & Discounts
+                    </span>
+                    <span className="text-[9px] font-sans uppercase">Save 35%</span>
+                  </div>
+                  <div className="space-y-2 text-sm font-sans">
+                    <Link
+                      href="/deals/bridal-makeup-deals"
+                      onClick={closeMobileNav}
+                      className="block text-[#FCFAF9] hover:text-[#E9C9CE] transition-colors"
+                    >
+                      Bridal Makeup Deals
+                    </Link>
+                    <Link
+                      href="/deals/party-makeup-deals"
+                      onClick={closeMobileNav}
+                      className="block text-[#FCFAF9] hover:text-[#E9C9CE] transition-colors"
+                    >
+                      Party Makeup Deals
+                    </Link>
+                    <Link
+                      href="/deals/makeup-deals"
+                      onClick={closeMobileNav}
+                      className="block text-[#FCFAF9] hover:text-[#E9C9CE] transition-colors"
+                    >
+                      Makeup Deals
+                    </Link>
+                  </div>
+                </div>
+
+                {/* CATEGORIES */}
                 <div className="space-y-3">
                   <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-2">
-                    MAIN COLLECTIONS
+                    COLLECTIONS & SUITES
                   </span>
-                  <Link
-                    href="/beauty"
-                    onClick={closeMobileNav}
-                    className="flex items-center justify-between py-1 group"
-                  >
-                    <span>Beauty & Cosmetics</span>
-                    <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#C58C97]" />
-                  </Link>
-                  <div className="pl-4 space-y-2 text-sm font-sans text-[#6E6767]">
+
+                  <div className="pl-1 space-y-2.5 text-base font-sans text-[#292526]">
                     <Link
                       href="/beauty/makeup"
                       onClick={closeMobileNav}
-                      className="block hover:text-[#171515] transition-colors"
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
                     >
-                      Makeup & Lip Colors
+                      <span>Makeup</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
                     </Link>
+
                     <Link
                       href="/beauty/skin-care"
                       onClick={closeMobileNav}
-                      className="block hover:text-[#171515] transition-colors"
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
                     >
-                      Botanical Skin Care
+                      <span>Skincare</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
                     </Link>
-                    <Link
-                      href="/beauty/hair-care"
-                      onClick={closeMobileNav}
-                      className="block hover:text-[#171515] transition-colors"
-                    >
-                      Nourishing Hair Care
-                    </Link>
-                  </div>
 
-                  <Link
-                    href="/fashion"
-                    onClick={closeMobileNav}
-                    className="flex items-center justify-between py-1 group pt-4"
-                  >
-                    <span>Fashion & Style</span>
-                    <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#C58C97]" />
-                  </Link>
-                  <div className="pl-4 space-y-2 text-sm font-sans text-[#6E6767]">
                     <Link
                       href="/fashion/belts"
                       onClick={closeMobileNav}
-                      className="block hover:text-[#171515] transition-colors"
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
                     >
-                      Italian Calfskin Belts
+                      <span>Belts</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
                     </Link>
+
+                    <Link
+                      href="/fashion/hand-bags"
+                      onClick={closeMobileNav}
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
+                    >
+                      <span>Hand Bags</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
+                    </Link>
+
                     <Link
                       href="/fashion/wallets"
                       onClick={closeMobileNav}
-                      className="block hover:text-[#171515] transition-colors"
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
                     >
-                      Saddle Leather Wallets
+                      <span>Wallets</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
+                    </Link>
+
+                    <Link
+                      href="/fashion/school-belts"
+                      onClick={closeMobileNav}
+                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
+                    >
+                      <span>School Belts</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
                     </Link>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-[#ECE7E6] space-y-3">
-                  <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-2">
-                    SHOP BY AUDIENCE
+                {/* REVIEWS & SUGGESTIONS */}
+                <div className="pt-4 border-t border-[#ECE7E6] space-y-2.5">
+                  <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-1">
+                    REVIEWS & SUGGESTIONS
                   </span>
-                  <Link
-                    href="/women"
-                    onClick={closeMobileNav}
-                    className="block hover:text-[#C58C97] transition-colors text-xl"
-                  >
-                    Women Collection
-                  </Link>
-                  <Link
-                    href="/men"
-                    onClick={closeMobileNav}
-                    className="block hover:text-[#C58C97] transition-colors text-xl"
-                  >
-                    Men Collection
-                  </Link>
-                  <Link
-                    href="/children"
-                    onClick={closeMobileNav}
-                    className="block hover:text-[#C58C97] transition-colors text-xl"
-                  >
-                    Children Care
-                  </Link>
+                  <div className="pl-1 space-y-2 text-sm font-sans text-[#6E6767]">
+                    <Link
+                      href="/delivery-period"
+                      onClick={closeMobileNav}
+                      className="block hover:text-[#171515] transition-colors"
+                    >
+                      Delivery Period
+                    </Link>
+                    <Link
+                      href="/return-policy"
+                      onClick={closeMobileNav}
+                      className="block hover:text-[#171515] transition-colors"
+                    >
+                      Return Policy
+                    </Link>
+                    <Link
+                      href="/reviews-suggestions"
+                      onClick={closeMobileNav}
+                      className="block hover:text-[#171515] transition-colors"
+                    >
+                      Feedback & Suggestions
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="pt-6 border-t border-[#ECE7E6] space-y-2 text-base font-sans font-light">
-                  <Link
-                    href="/journal"
-                    onClick={closeMobileNav}
-                    className="block hover:text-[#C58C97] transition-colors"
-                  >
-                    Maison Journal
-                  </Link>
-                  <Link
-                    href="/wishlist"
-                    onClick={closeMobileNav}
-                    className="flex items-center justify-between hover:text-[#C58C97] transition-colors"
-                  >
-                    <span>Wishlist</span>
-                    <span className="text-xs bg-[#F8E8EA] px-2 py-0.5 rounded-full">{wishlistCount}</span>
-                  </Link>
+                {/* UTILITY QUICK LINKS */}
+                <div className="pt-4 border-t border-[#ECE7E6] space-y-2.5">
+                  <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-1">
+                    CLIENT CARE
+                  </span>
+                  <div className="pl-1 space-y-2 text-sm font-sans text-[#171515]">
+                    <Link
+                      href="/track-order"
+                      onClick={closeMobileNav}
+                      className="flex items-center gap-2 hover:text-[#C58C97] transition-colors"
+                    >
+                      <Truck className="w-3.5 h-3.5 text-[#C58C97]" />
+                      <span>Track Your Order</span>
+                    </Link>
+                    <Link
+                      href="/contact"
+                      onClick={closeMobileNav}
+                      className="flex items-center gap-2 hover:text-[#C58C97] transition-colors"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-[#C58C97]" />
+                      <span>Contact Us</span>
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={closeMobileNav}
+                      className="flex items-center gap-2 hover:text-[#C58C97] transition-colors text-[#C58C97] font-medium"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#C58C97]" />
+                      <span>VIP Member Access ID</span>
+                    </Link>
+                  </div>
                 </div>
               </nav>
             </div>
