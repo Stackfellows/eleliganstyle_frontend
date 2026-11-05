@@ -20,6 +20,12 @@ export default function QuickViewModal() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     quickViewProduct?.variants ? quickViewProduct.variants[0] : undefined
   );
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(
+    quickViewProduct?.colors && quickViewProduct.colors.length > 0 ? quickViewProduct.colors[0] : undefined
+  );
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(
+    quickViewProduct?.sizes && quickViewProduct.sizes.length > 0 ? quickViewProduct.sizes[0] : undefined
+  );
   const [quantity, setQuantity] = useState(1);
 
   if (!quickViewProduct) return null;
@@ -30,12 +36,13 @@ export default function QuickViewModal() {
     : quickViewProduct.price;
 
   const handleAddToCart = () => {
-    addToCart(quickViewProduct, selectedVariant, quantity);
+    addToCart(quickViewProduct, selectedVariant, quantity, selectedColor, selectedSize);
     closeQuickView();
+    const optSummary = [selectedColor, selectedSize].filter(Boolean).join(' • ');
     showToast({
       type: 'success',
       title: 'Added to Bag',
-      message: `${quickViewProduct.name} (${quantity}) added to your bag.`,
+      message: `${quickViewProduct.name}${optSummary ? ` (${optSummary})` : ''} added to your bag.`,
       image: quickViewProduct.images[0],
     });
     openCart();
@@ -97,9 +104,14 @@ export default function QuickViewModal() {
           <div className="p-6 sm:p-8 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div>
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#6E6767] font-sans font-medium block">
-                  {quickViewProduct.mainCategory} • {quickViewProduct.subcategory}
-                </span>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-mono text-[10px] tracking-widest text-[#171515] bg-[#ECE7E6] px-2 py-0.5 rounded uppercase font-semibold">
+                    {quickViewProduct.brand || 'ELEGANTSTYLE'}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#6E6767] font-sans font-medium">
+                    {quickViewProduct.mainCategory} • {quickViewProduct.subcategory}
+                  </span>
+                </div>
                 <h3 className="font-serif text-2xl sm:text-3xl font-light text-[#171515] mt-1">
                   {quickViewProduct.name}
                 </h3>
@@ -148,6 +160,63 @@ export default function QuickViewModal() {
                           />
                         )}
                         <span>{v.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Colors Selection if present */}
+              {quickViewProduct.colors && quickViewProduct.colors.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-sans">
+                    <span className="font-medium text-[#171515] uppercase tracking-wider">
+                      Color Palette:
+                    </span>
+                    <span className="text-[#C58C97] font-medium">{selectedColor}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {quickViewProduct.colors.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setSelectedColor(c)}
+                        className={`text-xs py-1.5 px-3 border transition-colors flex items-center gap-1.5 font-sans ${
+                          selectedColor === c
+                            ? 'border-[#171515] bg-[#171515] text-[#FCFAF9]'
+                            : 'border-[#ECE7E6] text-[#171515] hover:border-[#171515]'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full border border-current opacity-80" />
+                        <span>{c}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sizes Selection if present */}
+              {quickViewProduct.sizes && quickViewProduct.sizes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-sans">
+                    <span className="font-medium text-[#171515] uppercase tracking-wider">
+                      Dimension / Size:
+                    </span>
+                    <span className="text-[#C58C97] font-medium">{selectedSize}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {quickViewProduct.sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSelectedSize(s)}
+                        className={`text-xs py-1.5 px-3 border transition-colors font-mono ${
+                          selectedSize === s
+                            ? 'border-[#171515] bg-[#171515] text-[#FCFAF9]'
+                            : 'border-[#ECE7E6] text-[#171515] hover:border-[#171515]'
+                        }`}
+                      >
+                        <span>{s}</span>
                       </button>
                     ))}
                   </div>

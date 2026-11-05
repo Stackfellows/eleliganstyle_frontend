@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/lib/context/CartContext';
@@ -51,6 +51,33 @@ export default function CheckoutPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
+
+  // Auto-fill logged-in client details
+  useEffect(() => {
+    try {
+      const sessionStr = localStorage.getItem('elegant_user_session');
+      if (sessionStr) {
+        const user = JSON.parse(sessionStr);
+        if (user) {
+          const names = (user.name || '').split(' ');
+          const fName = names[0] || '';
+          const lName = names.slice(1).join(' ') || '';
+          setFormData((prev) => ({
+            ...prev,
+            firstName: prev.firstName || fName,
+            lastName: prev.lastName || lName,
+            email: prev.email || user.email || '',
+            address: prev.address || user.address || '',
+            city: prev.city || user.city || 'Lahore',
+            province: prev.province || user.province || 'Punjab',
+            phone10: prev.phone10 || (user.phone ? user.phone.replace(/\D/g, '').slice(-10) : ''),
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Session autofill error', e);
+    }
+  }, []);
 
   const shippingFee = subtotal > 150 ? 0 : 15;
   const totalAmount = subtotal + shippingFee;
@@ -126,13 +153,53 @@ export default function CheckoutPage() {
             },
             items: cart.map((it) => ({
               productName: it.product.name,
+              name: it.product.name,
               quantity: it.quantity,
               pricePKR: it.product.price < 1000 ? Math.round(it.product.price * 280) : it.product.price,
+              image: it.product.images?.[0] || '',
+              brand: it.product.brand || 'ELEGANTSTYLE',
+              color: it.selectedColor || undefined,
+              size: it.selectedSize || undefined,
             })),
             totalPKR: pkrTotal,
             paymentMethod: formData.paymentMethod,
           }),
         });
+
+        // Also save order into local storage so user account archives are immediately updated
+        try {
+          const userOrder = {
+            id: generatedOrderId,
+            customerName: `${formData.firstName} ${formData.lastName}`.trim() || 'Valued Client',
+            customerPhone: fullPhone,
+            customerEmail: formData.email,
+            shippingAddress: {
+              street: formData.address,
+              city: formData.city,
+              province: formData.province,
+              postalCode: formData.postalCode,
+            },
+            items: cart.map((it) => ({
+              productName: it.product.name,
+              name: it.product.name,
+              quantity: it.quantity,
+              pricePKR: it.product.price < 1000 ? Math.round(it.product.price * 280) : it.product.price,
+              image: it.product.images?.[0] || '',
+              brand: it.product.brand || 'ELEGANTSTYLE',
+              color: it.selectedColor || undefined,
+              size: it.selectedSize || undefined,
+            })),
+            totalPKR: pkrTotal,
+            paymentMethod: formData.paymentMethod,
+            status: 'Processing',
+            createdAt: new Date().toISOString(),
+          };
+
+          const existingOrders = JSON.parse(localStorage.getItem('elegant_user_orders') || '[]');
+          localStorage.setItem('elegant_user_orders', JSON.stringify([userOrder, ...existingOrders]));
+        } catch (localErr) {
+          console.error('Local order save error', localErr);
+        }
       } catch (err) {
         console.error('Order submission error', err);
       }

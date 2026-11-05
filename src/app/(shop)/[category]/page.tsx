@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import ProductGrid from '@/components/product/ProductGrid';
+import CategoryClientFallback from '@/components/category/CategoryClientFallback';
 import { getProducts } from '@/lib/services/productService';
 import { getCategoryBySlug, getAudienceSectionBySlug, getSubcategoryMeta } from '@/lib/services/categoryService';
 import { MainCategory, Audience, SubCategory, Product } from '@/lib/types';
@@ -52,7 +53,7 @@ export default async function CategoryPage({ params }: PageProps) {
   const subcategory = getSubcategoryMeta(slug);
 
   if (!mainCategory && !audience && !subcategory) {
-    notFound();
+    return <CategoryClientFallback slug={slug} />;
   }
 
   let products: Product[] = [];

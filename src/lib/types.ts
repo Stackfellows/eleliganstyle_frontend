@@ -1,4 +1,4 @@
-export type MainCategory = 'beauty' | 'fashion';
+export type MainCategory = 'beauty' | 'fashion' | string;
 
 export type SubCategory =
   | 'makeup'
@@ -8,7 +8,8 @@ export type SubCategory =
   | 'hair-care'
   | 'hand-bags'
   | 'school-belts'
-  | 'deals';
+  | 'deals'
+  | string;
 
 export type Audience = 'women' | 'men' | 'children';
 
@@ -37,6 +38,9 @@ export interface Product {
   id: string;
   slug: string;
   name: string;
+  brand?: string;
+  colors?: string[];
+  sizes?: string[];
   subtitle: string;
   description: string;
   price: number;
@@ -80,6 +84,8 @@ export interface Category {
 export interface CartItem {
   product: Product;
   selectedVariant?: ProductVariant;
+  selectedColor?: string;
+  selectedSize?: string;
   quantity: number;
 }
 

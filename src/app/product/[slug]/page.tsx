@@ -6,6 +6,7 @@ import ProductGallery from '@/components/product/ProductGallery';
 import ProductInfo from '@/components/product/ProductInfo';
 import ProductReviews from '@/components/product/ProductReviews';
 import RelatedProducts from '@/components/product/RelatedProducts';
+import ProductDetailClientFallback from '@/components/product/ProductDetailClientFallback';
 
 interface PDPProps {
   params: Promise<{
@@ -39,7 +40,7 @@ export default async function ProductDetailPage({ params }: PDPProps) {
   const product = getProductBySlug(slug);
 
   if (!product) {
-    notFound();
+    return <ProductDetailClientFallback slug={slug} />;
   }
 
   const related = getRelatedProducts(product);

@@ -7,7 +7,7 @@ export const JOURNAL_ARTICLES: JournalArticle[] = [
     title: 'The Art of Botanical Skin Layering',
     category: 'skincare',
     subtitle: 'How to cultivate glowing skin density using natural bio-fermented hydrosols and plant squalane.',
-    author: 'Dr. Hélène Vaneau, Chief Cosmetic Scientist',
+    author: 'Amina Farooq, Chief Botanical Formulator',
     publishedAt: '2026-02-20',
     readTime: '4 min read',
     coverImage: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=1600&auto=format&fit=crop',

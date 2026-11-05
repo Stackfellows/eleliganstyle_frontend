@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { PRODUCTS } from '@/lib/data/products';
+import { getStoredProducts } from '@/lib/adminStore';
+import { Product } from '@/lib/types';
 import ProductCard from '../product/ProductCard';
 
 const TABS = [
@@ -15,11 +17,19 @@ const TABS = [
 
 export default function FeaturedProducts() {
   const [activeTab, setActiveTab] = useState('all');
+  const [productList, setProductList] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    setProductList(getStoredProducts());
+    const handleStorage = () => setProductList(getStoredProducts());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const filtered =
     activeTab === 'all'
-      ? PRODUCTS.slice(0, 8)
-      : PRODUCTS.filter((p) => p.badge === activeTab).slice(0, 8);
+      ? productList.slice(0, 8)
+      : productList.filter((p) => p.badge === activeTab).slice(0, 8);
 
   return (
     <section className="py-24 bg-[#FFFFFF] border-b border-[#ECE7E6]">

@@ -1,17 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Heart, User, ShoppingBag, ArrowRight, Sparkles, Truck, MessageSquare } from 'lucide-react';
 import { useUI } from '@/lib/context/UIContext';
 import { useCart } from '@/lib/context/CartContext';
 import { useWishlist } from '@/lib/context/WishlistContext';
+import { getStoredCategories } from '@/lib/adminStore';
+import { Category } from '@/lib/types';
+import { CATEGORIES } from '@/lib/data/categories';
 
 export default function NavigationDrawer() {
   const { isMobileNavOpen, closeMobileNav, openSearch, openCart } = useUI();
   const { itemCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
+
+  useEffect(() => {
+    if (isMobileNavOpen) {
+      setCategories(getStoredCategories());
+    }
+  }, [isMobileNavOpen]);
 
   return (
     <AnimatePresence>
@@ -90,66 +100,39 @@ export default function NavigationDrawer() {
                   </div>
                 </div>
 
-                {/* CATEGORIES */}
-                <div className="space-y-3">
+                {/* DYNAMIC CATEGORIES & SUBCATEGORIES */}
+                <div className="space-y-4">
                   <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-2">
                     COLLECTIONS & SUITES
                   </span>
 
-                  <div className="pl-1 space-y-2.5 text-base font-sans text-[#292526]">
-                    <Link
-                      href="/beauty/makeup"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>Makeup</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
-
-                    <Link
-                      href="/beauty/skin-care"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>Skincare</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
-
-                    <Link
-                      href="/fashion/belts"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>Belts</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
-
-                    <Link
-                      href="/fashion/hand-bags"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>Hand Bags</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
-
-                    <Link
-                      href="/fashion/wallets"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>Wallets</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
-
-                    <Link
-                      href="/fashion/school-belts"
-                      onClick={closeMobileNav}
-                      className="flex items-center justify-between hover:text-[#C58C97] transition-colors py-1 border-b border-[#ECE7E6]/50"
-                    >
-                      <span>School Belts</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                    </Link>
+                  <div className="space-y-3">
+                    {categories.map((cat) => (
+                      <div key={cat.slug} className="border-b border-[#ECE7E6]/60 pb-2.5 space-y-1.5">
+                        <Link
+                          href={`/${cat.slug}`}
+                          onClick={closeMobileNav}
+                          className="flex items-center justify-between text-base font-serif font-medium text-[#171515] hover:text-[#C58C97] transition-colors"
+                        >
+                          <span>{cat.name}</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
+                        </Link>
+                        {cat.subcategories && cat.subcategories.length > 0 && (
+                          <div className="pl-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-sans text-[#6E6767]">
+                            {cat.subcategories.map((sub) => (
+                              <Link
+                                key={sub.slug}
+                                href={`/${cat.slug}/${sub.slug}`}
+                                onClick={closeMobileNav}
+                                className="hover:text-[#171515] transition-colors py-0.5"
+                              >
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 

@@ -31,10 +31,10 @@ export default async function SubcategoryPage({ params }: SubcategoryPageProps) 
   });
 
   // Filter further by mainCategory or audience if applicable
-  if (['beauty', 'fashion'].includes(category)) {
-    products = products.filter((p) => p.mainCategory === category);
-  } else if (['women', 'men', 'children'].includes(category)) {
+  if (['women', 'men', 'children'].includes(category)) {
     products = products.filter((p) => p.audience.includes(category as Audience));
+  } else {
+    products = products.filter((p) => p.mainCategory === category);
   }
 
   const subFormatted = subcategory.replace('-', ' ');

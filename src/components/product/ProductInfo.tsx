@@ -16,6 +16,12 @@ export default function ProductInfo({ product }: { product: Product }) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     product.variants ? product.variants[0] : undefined
   );
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(
+    product.colors && product.colors.length > 0 ? product.colors[0] : undefined
+  );
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(
+    product.sizes && product.sizes.length > 0 ? product.sizes[0] : undefined
+  );
   const [quantity, setQuantity] = useState(1);
   const [activeAccordion, setActiveAccordion] = useState<string | null>('details');
 
@@ -25,11 +31,12 @@ export default function ProductInfo({ product }: { product: Product }) {
     : product.price;
 
   const handleAddToCart = () => {
-    addToCart(product, selectedVariant, quantity);
+    addToCart(product, selectedVariant, quantity, selectedColor, selectedSize);
+    const optionText = [selectedColor, selectedSize].filter(Boolean).join(' • ');
     showToast({
       type: 'success',
       title: 'Added to Bag',
-      message: `${product.name} has been added to your shopping bag.`,
+      message: `${product.name}${optionText ? ` (${optionText})` : ''} has been added to your shopping bag.`,
       image: product.images[0],
     });
     openCart();
@@ -44,8 +51,13 @@ export default function ProductInfo({ product }: { product: Product }) {
       {/* Category & Title */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs uppercase tracking-widest text-[#6E6767]">
-          <span>
-            {product.mainCategory} • {product.subcategory.replace('-', ' ')}
+          <span className="flex items-center gap-2">
+            <span className="font-semibold text-[#171515] bg-[#ECE7E6] px-2 py-0.5 rounded text-[10px] tracking-[0.2em]">
+              {product.brand || 'ELEGANTSTYLE'}
+            </span>
+            <span>
+              {product.mainCategory} • {product.subcategory.replace('-', ' ')}
+            </span>
           </span>
           <span className="text-[#C58C97] font-medium">{product.inStock ? 'IN STOCK' : 'OUT OF STOCK'}</span>
         </div>
@@ -113,6 +125,63 @@ export default function ProductInfo({ product }: { product: Product }) {
                   />
                 )}
                 <span>{v.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Colors Selection (NEW REQUIREMENT) */}
+      {product.colors && product.colors.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="uppercase tracking-wider font-medium text-[#171515]">
+              Select Color Palette:
+            </span>
+            <span className="text-[#C58C97] font-medium">{selectedColor}</span>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {product.colors.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setSelectedColor(c)}
+                className={`py-2 px-3.5 border text-xs transition-all flex items-center gap-2 ${
+                  selectedColor === c
+                    ? 'border-[#171515] bg-[#171515] text-[#FCFAF9] shadow-sm'
+                    : 'border-[#ECE7E6] text-[#171515] hover:border-[#171515] bg-[#FFFFFF]'
+                }`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full border border-current opacity-80" />
+                <span>{c}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sizes Selection (NEW REQUIREMENT) */}
+      {product.sizes && product.sizes.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="uppercase tracking-wider font-medium text-[#171515]">
+              Select Dimension / Size:
+            </span>
+            <span className="text-[#C58C97] font-medium">{selectedSize}</span>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {product.sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSelectedSize(s)}
+                className={`py-2 px-3.5 border text-xs transition-all font-mono ${
+                  selectedSize === s
+                    ? 'border-[#171515] bg-[#171515] text-[#FCFAF9] shadow-sm'
+                    : 'border-[#ECE7E6] text-[#171515] hover:border-[#171515] bg-[#FFFFFF]'
+                }`}
+              >
+                <span>{s}</span>
               </button>
             ))}
           </div>

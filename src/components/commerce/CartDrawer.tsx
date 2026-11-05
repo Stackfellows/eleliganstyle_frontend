@@ -134,10 +134,24 @@ export default function CartDrawer() {
                             </button>
                           </div>
 
+                          {item.product.brand && (
+                            <span className="text-[10px] uppercase tracking-wider text-[#C58C97] font-mono block">
+                              {item.product.brand}
+                            </span>
+                          )}
+
                           {item.selectedVariant && (
                             <span className="text-[11px] text-[#6E6767] font-sans block mt-0.5">
                               Variant: {item.selectedVariant.name}
                             </span>
+                          )}
+
+                          {(item.selectedColor || item.selectedSize) && (
+                            <div className="flex flex-wrap gap-2 text-[11px] text-[#6E6767] font-sans mt-0.5">
+                              {item.selectedColor && <span>Color: <strong>{item.selectedColor}</strong></span>}
+                              {item.selectedColor && item.selectedSize && <span>•</span>}
+                              {item.selectedSize && <span>Size: <strong>{item.selectedSize}</strong></span>}
+                            </div>
                           )}
 
                           <span className="text-xs font-medium text-[#171515] font-sans block mt-1">

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ShoppingCart,
   Search,
@@ -23,7 +24,12 @@ import {
   Banknote,
   FileSpreadsheet,
   FileText,
-  Download
+  Download,
+  Copy,
+  Check,
+  Trash2,
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Dispatched' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -34,6 +40,9 @@ export interface OrderItem {
   quantity: number;
   pricePKR: number;
   image?: string;
+  brand?: string;
+  color?: string;
+  size?: string;
 }
 
 export interface CustomerOrder {
@@ -52,7 +61,7 @@ export interface CustomerOrder {
   subtotalPKR: number;
   shippingFeePKR: number;
   totalPKR: number;
-  paymentMethod: 'Cash on Delivery (COD)' | 'Bank Transfer' | 'JazzCash / EasyPaisa' | 'Credit / Debit Card';
+  paymentMethod: string;
   paymentStatus: 'Paid' | 'Unpaid (COD)' | 'Pending Verification';
   status: OrderStatus;
   orderDate: string;
@@ -151,7 +160,7 @@ const INITIAL_ORDERS: CustomerOrder[] = [
     subtotalPKR: 68500,
     shippingFeePKR: 0,
     totalPKR: 68500,
-    paymentMethod: 'Credit / Debit Card',
+    paymentMethod: 'JazzCash / EasyPaisa',
     paymentStatus: 'Paid',
     status: 'Shipped',
     orderDate: '2026-10-06 04:15 PM',
@@ -186,91 +195,140 @@ const INITIAL_ORDERS: CustomerOrder[] = [
     status: 'Delivered',
     orderDate: '2026-10-05 02:00 PM',
     trackingNumber: 'TRAX-119280'
-  },
-  {
-    id: 'ORD-PK-9817',
-    customerName: 'Fatima Noor',
-    customerPhone: '+92 312 5590123',
-    customerEmail: 'fatima.noor@hotmail.com',
-    shippingAddress: {
-      street: 'Bungalow 78, Cantt Road, Near Mall',
-      city: 'Rawalpindi',
-      province: 'Punjab',
-      postalCode: '46000',
-      deliveryNotes: 'Call before dispatch.'
-    },
-    items: [
-      {
-        id: 'item-6',
-        name: 'Nocturne Gala Glamour Set',
-        quantity: 1,
-        pricePKR: 39500,
-        image: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=400&auto=format&fit=crop'
-      }
-    ],
-    subtotalPKR: 39500,
-    shippingFeePKR: 500,
-    totalPKR: 40000,
-    paymentMethod: 'JazzCash / EasyPaisa',
-    paymentStatus: 'Pending Verification',
-    status: 'Pending',
-    orderDate: '2026-10-07 11:55 AM'
   }
 ];
 
-export default function AdminOrdersPage() {
+function AdminOrdersContent() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('id');
+
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [cityFilter, setCityFilter] = useState<string>('All');
+  const [paymentFilter, setPaymentFilter] = useState<string>('All');
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
+  const [copiedSummary, setCopiedSummary] = useState(false);
 
+  // Load and merge orders from API, local storage, and demo initial data
   useEffect(() => {
-    // Fetch live orders from /api/orders backend
     async function loadOrders() {
+      let combined: CustomerOrder[] = [];
+
+      // 1. Fetch from server API
       try {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        if (data.success && data.orders && data.orders.length > 0) {
+        if (data.success && Array.isArray(data.orders)) {
           const formatted: CustomerOrder[] = data.orders.map((o: any) => ({
             id: o.id,
-            customerName: o.customerName,
+            customerName: o.customerName || 'Valued Client',
             customerPhone: o.customerPhone || '+92 300 0000000',
-            customerEmail: o.customerEmail || 'customer@maison.pk',
+            customerEmail: o.customerEmail || 'client@maison.pk',
             shippingAddress: typeof o.shippingAddress === 'string'
               ? { street: o.shippingAddress, city: 'Lahore', province: 'Punjab', postalCode: '54000' }
-              : o.shippingAddress,
+              : o.shippingAddress || { street: 'Main Road', city: 'Lahore', province: 'Punjab', postalCode: '54000' },
             items: (o.items || []).map((it: any, idx: number) => ({
               id: `item-${idx}`,
-              name: it.productName || it.name,
-              quantity: it.quantity,
+              name: it.productName || it.name || 'Artisanal Creation',
+              quantity: it.quantity || 1,
               pricePKR: it.pricePKR || it.price || 15000,
+              image: it.image
             })),
             subtotalPKR: o.totalPKR || 35000,
             shippingFeePKR: 0,
             totalPKR: o.totalPKR || 35000,
             paymentMethod: o.paymentMethod || 'Cash on Delivery (COD)',
             paymentStatus: o.paymentMethod?.includes('COD') ? 'Unpaid (COD)' : 'Paid',
-            status: o.status || 'Pending',
-            orderDate: new Date(o.createdAt || Date.now()).toLocaleString(),
-            trackingNumber: `PAK-${o.id}`
+            status: (o.status as OrderStatus) || 'Pending',
+            orderDate: new Date(o.createdAt || Date.now()).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            trackingNumber: `PAK-EXP-${o.id.replace(/[^0-9]/g, '') || '9841'}`
           }));
-          setOrders(formatted);
-          localStorage.setItem('elegant_admin_orders', JSON.stringify(formatted));
-        } else {
-          setOrders(INITIAL_ORDERS);
+          combined = [...formatted];
         }
       } catch (err) {
-        console.error('Error fetching admin orders:', err);
-        setOrders(INITIAL_ORDERS);
+        console.error('Error fetching admin orders from API:', err);
+      }
+
+      // 2. Fetch from localStorage elegant_user_orders (placed by customer in checkout)
+      try {
+        const userOrders = localStorage.getItem('elegant_user_orders');
+        if (userOrders) {
+          const parsed = JSON.parse(userOrders);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((po: any) => {
+              if (!combined.some((c) => c.id === po.id)) {
+                combined.unshift({
+                  id: po.id,
+                  customerName: po.customerName || 'Online Client',
+                  customerPhone: po.customerPhone || '+92 300 0000000',
+                  customerEmail: po.customerEmail || 'customer@maison.pk',
+                  shippingAddress: po.shippingAddress || { street: 'Address', city: 'Lahore', province: 'Punjab', postalCode: '54000' },
+                  items: (po.items || []).map((it: any, idx: number) => ({
+                    id: `user-it-${idx}`,
+                    name: it.productName || it.name || 'Creation',
+                    quantity: it.quantity || 1,
+                    pricePKR: it.pricePKR || 12000,
+                    image: it.image
+                  })),
+                  subtotalPKR: po.totalPKR || 25000,
+                  shippingFeePKR: 0,
+                  totalPKR: po.totalPKR || 25000,
+                  paymentMethod: po.paymentMethod || 'Cash on Delivery (COD)',
+                  paymentStatus: po.paymentMethod?.includes('COD') ? 'Unpaid (COD)' : 'Paid',
+                  status: (po.status as OrderStatus) || 'Processing',
+                  orderDate: new Date(po.createdAt || Date.now()).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                  trackingNumber: `PAK-EXP-${po.id.replace(/[^0-9]/g, '') || '9841'}`
+                });
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing user orders', err);
+      }
+
+      // 3. Fallback Initial Orders
+      INITIAL_ORDERS.forEach((io) => {
+        if (!combined.some((c) => c.id === io.id)) {
+          combined.push(io);
+        }
+      });
+
+      setOrders(combined);
+      localStorage.setItem('elegant_admin_orders', JSON.stringify(combined));
+
+      // Check if URL has ?id=ORD-...
+      if (highlightId) {
+        const target = combined.find((o) => o.id.toLowerCase() === highlightId.toLowerCase());
+        if (target) {
+          setSelectedOrder(target);
+        }
       }
     }
 
     loadOrders();
-  }, []);
+  }, [highlightId]);
 
-  const saveOrders = async (updated: CustomerOrder[]) => {
+  const saveOrders = (updated: CustomerOrder[]) => {
     setOrders(updated);
-    localStorage.setItem('elegant_admin_orders', JSON.stringify(updated));
+    try {
+      localStorage.setItem('elegant_admin_orders', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
@@ -280,7 +338,7 @@ export default function AdminOrdersPage() {
       setSelectedOrder({ ...selectedOrder, status: newStatus });
     }
 
-    // Also update server endpoint /api/orders via PATCH
+    // Sync status change with /api/orders
     try {
       await fetch('/api/orders', {
         method: 'PATCH',
@@ -292,25 +350,54 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const [cityFilter, setCityFilter] = useState<string>('All');
-  const [paymentFilter, setPaymentFilter] = useState<string>('All');
+  const handleDeleteOrder = (orderId: string) => {
+    if (confirm(`Are you sure you want to remove Order #${orderId} from the admin ledger?`)) {
+      const updated = orders.filter((o) => o.id !== orderId);
+      saveOrders(updated);
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
+    }
+  };
+
+  const handleCopyCustomerSummary = (order: CustomerOrder) => {
+    const itemsText = order.items.map((i) => `• ${i.name} (Qty: ${i.quantity}) - PKR ${(i.pricePKR * i.quantity).toLocaleString()}`).join('\n');
+    const summary = `*ELEGANTSTYLE MAISON - ORDER CONFIRMATION*\n` +
+      `Order Reference: ${order.id}\n` +
+      `Customer Name: ${order.customerName}\n` +
+      `Phone: ${order.customerPhone}\n` +
+      `Delivery Address: ${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.province}\n` +
+      `Items:\n${itemsText}\n` +
+      `Total Amount: PKR ${order.totalPKR.toLocaleString()}\n` +
+      `Payment Method: ${order.paymentMethod}\n` +
+      `Status: ${order.status}\n` +
+      `Tracking ID: ${order.trackingNumber || 'PAK-EXPRESS'}`;
+
+    navigator.clipboard.writeText(summary);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2500);
+  };
 
   const filteredOrders = orders.filter((o) => {
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customerPhone.includes(searchQuery) ||
-      o.shippingAddress.city.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      o.id.toLowerCase().includes(q) ||
+      o.customerName.toLowerCase().includes(q) ||
+      o.customerPhone.includes(q) ||
+      o.customerEmail.toLowerCase().includes(q) ||
+      o.shippingAddress.city.toLowerCase().includes(q) ||
+      o.shippingAddress.street.toLowerCase().includes(q);
+
     const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
     const matchesCity = cityFilter === 'All' || o.shippingAddress.city === cityFilter;
-    const matchesPayment = paymentFilter === 'All' || o.paymentMethod.includes(paymentFilter);
+    const matchesPayment = paymentFilter === 'All' || o.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
+
     return matchesSearch && matchesStatus && matchesCity && matchesPayment;
   });
 
-  // Unique cities from orders
   const availableCities = Array.from(new Set(orders.map((o) => o.shippingAddress.city).filter(Boolean)));
 
-  // Download Option: CSV/Excel
   const handleDownloadExcel = () => {
     const headers = [
       'Order ID',
@@ -320,7 +407,8 @@ export default function AdminOrdersPage() {
       'Customer Email',
       'City',
       'Street Address',
-      'Items',
+      'Purchased Items',
+      'Ordered Quantity',
       'Total (PKR)',
       'Payment Method',
       'Payment Status',
@@ -328,102 +416,163 @@ export default function AdminOrdersPage() {
       'Tracking Number'
     ];
 
-    const rows = filteredOrders.map((o) => [
-      `"${o.id}"`,
-      `"${o.orderDate}"`,
-      `"${o.customerName}"`,
-      `"${o.customerPhone}"`,
-      `"${o.customerEmail}"`,
-      `"${o.shippingAddress.city}"`,
-      `"${o.shippingAddress.street?.replace(/"/g, '""') || ''}"`,
-      `"${o.items.map((i) => `${i.name} (x${i.quantity})`).join(', ').replace(/"/g, '""')}"`,
-      o.totalPKR,
-      `"${o.paymentMethod}"`,
-      `"${o.paymentStatus}"`,
-      `"${o.status}"`,
-      `"${o.trackingNumber || ''}"`
-    ]);
+    const rows = filteredOrders.map((o) => {
+      const totalQty = o.items.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0);
+      return [
+        `"${o.id}"`,
+        `"${o.orderDate}"`,
+        `"${o.customerName}"`,
+        `"${o.customerPhone}"`,
+        `"${o.customerEmail}"`,
+        `"${o.shippingAddress.city}"`,
+        `"${o.shippingAddress.street?.replace(/"/g, '""') || ''}"`,
+        `"${o.items.map((i) => `${i.name} (x${i.quantity})`).join('; ').replace(/"/g, '""')}"`,
+        totalQty,
+        o.totalPKR,
+        `"${o.paymentMethod}"`,
+        `"${o.paymentStatus}"`,
+        `"${o.status}"`,
+        `"${o.trackingNumber || ''}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `ElegantStyle_Orders_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `ElegantStyle_Orders_Ledger_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Download Option: PDF / Print Report
   const handleDownloadPDF = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    const printWindow = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
 
-    const rowsHtml = filteredOrders.map((o) => `
-      <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace;">${o.id}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${o.orderDate}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${o.customerName}</strong><br/><small>${o.customerPhone}</small></td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${o.shippingAddress.city}, ${o.shippingAddress.street || ''}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${o.items.map((i) => `${i.name} x${i.quantity}`).join('<br/>')}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">PKR ${o.totalPKR.toLocaleString()}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${o.paymentMethod}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${o.status}</td>
-      </tr>
-    `).join('');
+    const rowsHtml = filteredOrders
+      .map((o) => {
+        const totalQty = o.items.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0);
+        const itemsList = o.items
+          .map((i) => `<div><strong>${i.name}</strong> × ${i.quantity}${i.color ? ` (${i.color})` : ''}${i.size ? ` [${i.size}]` : ''}</div>`)
+          .join('');
 
-    printWindow.document.write(`
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: #171515;">${o.id}</div>
+              <div style="font-size: 10px; color: #777;">${o.orderDate}</div>
+            </td>
+            <td>
+              <div style="font-weight: 600;">${o.customerName}</div>
+              <div style="font-size: 11px; color: #555;">${o.customerPhone}</div>
+              <div style="font-size: 10px; color: #888;">${o.customerEmail}</div>
+            </td>
+            <td>
+              <div>${o.shippingAddress.city}, ${o.shippingAddress.province}</div>
+              <div style="font-size: 10px; color: #777;">${o.shippingAddress.street}</div>
+            </td>
+            <td>${itemsList}</td>
+            <td style="text-align: center; font-weight: 700; background: #FAF7F6; font-size: 13px;">
+              ${totalQty} <span style="font-size: 10px; font-weight: normal; color: #666;">Units</span>
+            </td>
+            <td style="font-weight: 700; font-family: monospace;">₨ ${o.totalPKR.toLocaleString()}</td>
+            <td>
+              <div>${o.paymentMethod}</div>
+              <div style="font-size: 10px; color: #666;">${o.paymentStatus}</div>
+            </td>
+            <td>
+              <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: 1px solid #CCC;">
+                ${o.status}
+              </span>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>ELEGANTSTYLE - Customer Orders Report</title>
+          <title>ELEGANTSTYLE — Orders Ledger & PDF Report</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; color: #171515; }
-            h1 { font-family: serif; margin-bottom: 4px; font-weight: 300; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #171515; padding-bottom: 16px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th { background: #f4f6ee; text-align: left; padding: 10px 8px; border-bottom: 2px solid #556340; font-family: monospace; text-transform: uppercase; }
+            @page { size: landscape; margin: 12mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #222; margin: 0; padding: 20px; font-size: 11px; line-height: 1.4; }
+            .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #171515; padding-bottom: 12px; margin-bottom: 16px; }
+            .brand { font-family: "Didot", "Playfair Display", Georgia, serif; font-size: 24px; letter-spacing: 3px; font-weight: 600; text-transform: uppercase; color: #171515; }
+            .tagline { font-size: 9px; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-top: 2px; }
+            .meta { text-align: right; font-size: 10px; color: #666; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #171515; color: #FCFAF9; text-transform: uppercase; font-size: 9px; letter-spacing: 1px; padding: 8px 6px; text-align: left; }
+            td { padding: 8px 6px; border-bottom: 1px solid #E8E5E4; vertical-align: top; }
+            tr:nth-child(even) { background-color: #FCFAF9; }
+            .summary-box { display: flex; gap: 20px; margin-top: 16px; padding: 12px; background: #F8F5F4; border: 1px solid #E5E0DF; border-radius: 4px; font-size: 11px; }
+            .summary-item { font-weight: 600; }
+            .no-print { margin-bottom: 15px; }
+            .print-btn { background: #171515; color: #FFF; border: none; padding: 8px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; font-weight: 600; }
             @media print {
+              .no-print { display: none !important; }
               body { padding: 0; }
-              @page { margin: 1cm; size: landscape; }
             }
           </style>
         </head>
         <body>
+          <div class="no-print">
+            <button class="print-btn" onclick="window.print()">📥 Save as PDF / Print Report</button>
+            <span style="margin-left: 10px; color: #666; font-size: 11px;">Tip: Select "Save as PDF" in the destination dropdown to download this PDF file.</span>
+          </div>
           <div class="header">
             <div>
-              <h1>ELEGANTSTYLE — MAISON ORDERS REPORT</h1>
-              <p style="margin: 0; font-size: 11px; color: #666;">Generated on ${new Date().toLocaleString()} | Filtered Orders: ${filteredOrders.length}</p>
+              <div class="brand">ELEGANTSTYLE</div>
+              <div class="tagline">Luxury Beauty & Fashion Privilege — Orders & Logistics Ledger</div>
             </div>
-            <div style="text-align: right; font-size: 12px;">
-              <strong>Total Volume: PKR ${filteredOrders.reduce((sum, o) => sum + o.totalPKR, 0).toLocaleString()}</strong>
+            <div class="meta">
+              <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+              <div><strong>Total Filtered Orders:</strong> ${filteredOrders.length}</div>
             </div>
           </div>
+
           <table>
             <thead>
               <tr>
-                <th>Order ID</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Destination</th>
-                <th>Purchased Items</th>
-                <th>Total</th>
-                <th>Payment Mode</th>
-                <th>Status</th>
+                <th style="width: 11%;">Order ID & Date</th>
+                <th style="width: 15%;">Customer</th>
+                <th style="width: 16%;">Delivery Destination</th>
+                <th style="width: 20%;">Purchased Items</th>
+                <th style="width: 10%; text-align: center;">Ordered Qty</th>
+                <th style="width: 11%;">Total Amount</th>
+                <th style="width: 10%;">Payment Mode</th>
+                <th style="width: 7%;">Status</th>
               </tr>
             </thead>
             <tbody>
               ${rowsHtml}
             </tbody>
           </table>
+
+          <div class="summary-box">
+            <div class="summary-item">Total Orders: <span>${filteredOrders.length}</span></div>
+            <div class="summary-item">Total Units Ordered: <span>${filteredOrders.reduce((sum, o) => sum + o.items.reduce((isum, it) => isum + (Number(it.quantity) || 1), 0), 0)} Units</span></div>
+            <div class="summary-item">Total Amount: <span>₨ ${filteredOrders.reduce((sum, o) => sum + o.totalPKR, 0).toLocaleString()}</span></div>
+          </div>
+
           <script>
             window.onload = function() {
-              window.print();
-            }
+              setTimeout(function() {
+                window.print();
+              }, 400);
+            };
           </script>
         </body>
       </html>
-    `);
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
@@ -451,75 +600,91 @@ export default function AdminOrdersPage() {
     .reduce((sum, o) => sum + o.totalPKR, 0);
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Top Title & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#242022] pb-6">
+    <div className="space-y-6 font-sans antialiased text-[#F3ECEB]">
+      {/* Top Banner & Quick Controls */}
+      <div className="p-6 bg-[#141213] border border-[#242022] rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded bg-[#262123] text-[#E9C9CE] text-[10px] uppercase tracking-widest font-mono mb-1">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#262123] text-[#E9C9CE] text-[10px] uppercase tracking-widest font-mono">
             <ShoppingCart className="w-3.5 h-3.5 text-[#E9C9CE]" />
-            <span>Customer Orders & Delivery Center</span>
+            <span>Customer Orders & Logistics Ledger</span>
           </div>
-          <h1 className="font-serif text-2xl text-[#FFFFFF]">Order Fulfillment & Customer Purchases</h1>
-          <p className="text-xs text-[#7A7375]">
-            Track delivery destinations, customer contact details, and update live fulfillment statuses (All amounts in PKR).
+          <h1 className="font-serif text-2xl sm:text-3xl font-light text-[#FFFFFF] tracking-wide mt-1">
+            Customer Orders Management
+          </h1>
+          <p className="text-xs text-[#B0A7A9] font-light mt-0.5">
+            View real-time customer orders, inspect complete shipping & contact info, and update fulfillment statuses.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={handleDownloadExcel}
-            className="px-3.5 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#6B7C52] text-[#FCFAF9] text-xs rounded transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:text-[#D0D9C0]"
-            title="Download full customer orders spreadsheet in Excel (CSV) format"
+            className="px-3.5 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded text-xs transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+            title="Download complete orders spreadsheet with ordered quantity column"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Download Excel</span>
+            <Download className="w-3.5 h-3.5 text-[#E9C9CE]" />
+            <span>Export CSV</span>
           </button>
-
           <button
             onClick={handleDownloadPDF}
-            className="px-3.5 py-2 bg-[#6B7C52] hover:bg-[#556340] text-[#FCFAF9] text-xs rounded transition-all flex items-center gap-2 cursor-pointer shadow-sm font-medium"
-            title="Download printable PDF Report of filtered orders"
+            className="px-3.5 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded text-xs transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+            title="Download / Print luxury orders report PDF with ordered quantity column"
           >
-            <FileText className="w-3.5 h-3.5 text-[#FCFAF9]" />
-            <span>Download PDF</span>
+            <Printer className="w-3.5 h-3.5 text-[#E9C9CE]" />
+            <span>Print / Download PDF</span>
           </button>
-
-          <div className="p-3 bg-[#141213] border border-[#242022] rounded-lg flex items-center gap-4 text-xs font-mono">
-            <div>
-              <span className="text-[10px] text-[#7A7375] uppercase block">Total Net Volume</span>
-              <span className="font-serif text-base text-[#FFFFFF] font-bold">
-                PKR {totalRevenuePKR.toLocaleString()}
-              </span>
-            </div>
-            <div className="h-8 w-px bg-[#242022]"></div>
-            <div>
-              <span className="text-[10px] text-[#7A7375] uppercase block">Total Orders</span>
-              <span className="font-serif text-base text-[#D0D9C0] font-bold">{orders.length} Purchases</span>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar with Multi-Filter Suite */}
+      {/* Metric Counters Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 bg-[#141213] border border-[#242022] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono">Total Orders</span>
+          <div className="text-2xl font-serif text-[#FFFFFF]">{orders.length}</div>
+          <span className="text-[10px] text-[#A8A19F]">All-time store orders</span>
+        </div>
+
+        <div className="p-4 bg-[#141213] border border-[#242022] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono">Total Order Value</span>
+          <div className="text-2xl font-serif text-[#E9C9CE]">₨ {(totalRevenuePKR / 1000).toFixed(0)}k</div>
+          <span className="text-[10px] text-emerald-400">Total in PKR</span>
+        </div>
+
+        <div className="p-4 bg-[#141213] border border-[#242022] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono">Pending / Processing</span>
+          <div className="text-2xl font-serif text-amber-300">
+            {orders.filter((o) => o.status === 'Pending' || o.status === 'Processing').length}
+          </div>
+          <span className="text-[10px] text-amber-400">Awaiting dispatch</span>
+        </div>
+
+        <div className="p-4 bg-[#141213] border border-[#242022] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono">Delivered</span>
+          <div className="text-2xl font-serif text-emerald-400">
+            {orders.filter((o) => o.status === 'Delivered').length}
+          </div>
+          <span className="text-[10px] text-emerald-400">Completed shipments</span>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 bg-[#141213] border border-[#242022] p-4 rounded-lg">
-        {/* Search */}
         <div className="lg:col-span-5 relative">
           <Search className="w-3.5 h-3.5 text-[#7A7375] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name, phone, city, or order ID..."
-            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] placeholder-[#6B6466] pl-9 pr-4 py-2 rounded border border-[#2B2527] focus:outline-none focus:border-[#6B7C52]"
+            placeholder="Search by Order ID, Customer Name, Phone, Email, City..."
+            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] placeholder-[#6B6466] pl-9 pr-4 py-2.5 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           />
         </div>
 
-        {/* Fulfillment Status Filter */}
         <div className="lg:col-span-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#6B7C52]"
+            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2.5 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           >
             <option value="All">All Statuses ({orders.length})</option>
             <option value="Pending">Pending</option>
@@ -531,28 +696,28 @@ export default function AdminOrdersPage() {
           </select>
         </div>
 
-        {/* City Filter */}
         <div className="lg:col-span-2">
           <select
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
-            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#6B7C52]"
+            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2.5 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           >
             <option value="All">All Cities</option>
             {availableCities.map((city) => (
-              <option key={city} value={city}>{city}</option>
+              <option key={city} value={city}>
+                {city}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* Payment Filter */}
         <div className="lg:col-span-2">
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#6B7C52]"
+            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2.5 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           >
-            <option value="All">All Payments</option>
+            <option value="All">All Payment Modes</option>
             <option value="COD">Cash on Delivery</option>
             <option value="JazzCash">JazzCash</option>
             <option value="EasyPaisa">EasyPaisa</option>
@@ -568,178 +733,242 @@ export default function AdminOrdersPage() {
             <thead className="bg-[#1A1718] text-[10px] uppercase tracking-wider text-[#7A7375] font-mono border-b border-[#242022]">
               <tr>
                 <th className="p-3.5">Order ID & Date</th>
-                <th className="p-3.5">Customer Details</th>
-                <th className="p-3.5">Delivery Destination</th>
+                <th className="p-3.5">Customer Information</th>
+                <th className="p-3.5">Destination City & Street</th>
                 <th className="p-3.5">Purchased Items</th>
-                <th className="p-3.5">Payment (PKR)</th>
+                <th className="p-3.5 text-center">Ordered Quantity</th>
+                <th className="p-3.5">Total Amount</th>
                 <th className="p-3.5">Fulfillment Status</th>
-                <th className="p-3.5 text-right">Action</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#242022]">
-              {filteredOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-[#1A1718]/60 transition-colors">
-                  {/* Order ID & Date */}
-                  <td className="p-3.5 whitespace-nowrap">
-                    <div className="font-mono text-[#E9C9CE] font-medium">{ord.id}</div>
-                    <div className="text-[10px] text-[#7A7375]">{ord.orderDate}</div>
-                  </td>
-
-                  {/* Customer Details */}
-                  <td className="p-3.5">
-                    <div className="font-serif text-sm text-[#FFFFFF] font-medium flex items-center gap-1.5">
-                      <User className="w-3 h-3 text-[#E9C9CE]" />
-                      <span>{ord.customerName}</span>
-                    </div>
-                    <div className="text-[11px] text-[#A8A19F] font-mono flex items-center gap-1 mt-0.5">
-                      <Phone className="w-2.5 h-2.5 text-[#7A7375]" />
-                      <span>{ord.customerPhone}</span>
-                    </div>
-                    <div className="text-[10px] text-[#7A7375] truncate max-w-xs">{ord.customerEmail}</div>
-                  </td>
-
-                  {/* Delivery Destination (Oder Kahan Bhejna Hai) */}
-                  <td className="p-3.5 max-w-xs">
-                    <div className="flex items-start gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#E9C9CE] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-medium text-[#F3ECEB] text-xs block">
-                          {ord.shippingAddress.city}, {ord.shippingAddress.province}
-                        </span>
-                        <span className="text-[11px] text-[#7A7375] line-clamp-1">
-                          {ord.shippingAddress.street}
-                        </span>
-                        {ord.shippingAddress.deliveryNotes && (
-                          <span className="text-[10px] text-[#C58C97] italic block mt-0.5">
-                            Note: {ord.shippingAddress.deliveryNotes}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Purchased Items */}
-                  <td className="p-3.5 max-w-xs">
-                    <div className="space-y-1">
-                      {ord.items.map((it, idx) => (
-                        <div key={idx} className="text-[11px] text-[#D4CDCE] flex items-center justify-between">
-                          <span className="truncate max-w-[180px]">{it.name}</span>
-                          <span className="font-mono text-[10px] text-[#7A7375] shrink-0 ml-2">x{it.quantity}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Payment in PKR */}
-                  <td className="p-3.5 whitespace-nowrap">
-                    <div className="font-mono text-sm text-[#FFFFFF] font-bold">
-                      PKR {ord.totalPKR.toLocaleString()}
-                    </div>
-                    <div className="text-[10px] font-mono text-[#A8A19F] flex items-center gap-1 mt-0.5">
-                      <Banknote className="w-3 h-3 text-[#E9C9CE]" />
-                      <span>{ord.paymentMethod}</span>
-                    </div>
-                  </td>
-
-                  {/* Fulfillment Status Dropdown (Live Changer) */}
-                  <td className="p-3.5">
-                    <div className="relative inline-block w-36">
-                      <select
-                        value={ord.status}
-                        onChange={(e) => handleStatusChange(ord.id, e.target.value as OrderStatus)}
-                        className={`w-full py-1.5 px-2.5 rounded text-[11px] font-mono uppercase tracking-wider border focus:outline-none transition-all cursor-pointer ${getStatusBadgeClass(
-                          ord.status
-                        )}`}
-                      >
-                        <option value="Pending" className="bg-[#141213] text-amber-300">Pending</option>
-                        <option value="Processing" className="bg-[#141213] text-blue-300">Processing</option>
-                        <option value="Dispatched" className="bg-[#141213] text-indigo-300">Dispatched</option>
-                        <option value="Shipped" className="bg-[#141213] text-purple-300">Shipped</option>
-                        <option value="Delivered" className="bg-[#141213] text-emerald-300">Delivered</option>
-                        <option value="Cancelled" className="bg-[#141213] text-red-300">Cancelled</option>
-                      </select>
-                    </div>
-                  </td>
-
-                  {/* View Details Button */}
-                  <td className="p-3.5 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => setSelectedOrder(ord)}
-                      className="px-3 py-1.5 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#E9C9CE] hover:text-[#FFFFFF] rounded text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer font-medium"
-                    >
-                      <Eye className="w-3 h-3" />
-                      <span>View Details</span>
-                    </button>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-xs text-[#7A7375]">
+                    No orders matching current filter criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((ord) => {
+                  const totalQty = ord.items.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0);
+                  return (
+                    <tr key={ord.id} className="hover:bg-[#1A1718]/70 transition-colors">
+                      {/* Order ID & Date */}
+                      <td className="p-3.5 whitespace-nowrap">
+                        <div className="font-mono text-[#E9C9CE] font-bold">{ord.id}</div>
+                        <div className="text-[10px] text-[#7A7375] mt-0.5">{ord.orderDate}</div>
+                      </td>
+
+                      {/* Customer Information */}
+                      <td className="p-3.5">
+                        <div className="font-serif text-sm text-[#FFFFFF] font-medium flex items-center gap-1.5">
+                          <User className="w-3 h-3 text-[#E9C9CE]" />
+                          <span>{ord.customerName}</span>
+                        </div>
+                        <div className="text-[11px] text-[#A8A19F] font-mono flex items-center gap-1 mt-0.5">
+                          <Phone className="w-2.5 h-2.5 text-[#7A7375]" />
+                          <span>{ord.customerPhone}</span>
+                        </div>
+                        <div className="text-[10px] text-[#7A7375] truncate max-w-xs">{ord.customerEmail}</div>
+                      </td>
+
+                      {/* Destination City & Street */}
+                      <td className="p-3.5 max-w-xs">
+                        <div className="flex items-start gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-[#E9C9CE] shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-medium text-[#F3ECEB] text-xs block">
+                              {ord.shippingAddress.city}, {ord.shippingAddress.province}
+                            </span>
+                            <span className="text-[11px] text-[#7A7375] line-clamp-1">
+                              {ord.shippingAddress.street}
+                            </span>
+                            {ord.shippingAddress.deliveryNotes && (
+                              <span className="text-[10px] text-[#C58C97] italic block mt-0.5">
+                                Note: {ord.shippingAddress.deliveryNotes}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Purchased Items */}
+                      <td className="p-3.5 max-w-xs">
+                        <div className="space-y-1">
+                          {ord.items.map((it, idx) => (
+                            <div key={idx} className="text-[11px] text-[#D4CDCE] flex items-center justify-between">
+                              <span className="truncate max-w-[170px]">{it.name}</span>
+                              <span className="font-mono text-[10px] text-[#7A7375] shrink-0 ml-2">×{it.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Ordered Quantity Column */}
+                      <td className="p-3.5 text-center whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1F1B1D] border border-[#3A2E32] rounded-full">
+                          <Package className="w-3 h-3 text-[#E9C9CE]" />
+                          <span className="font-mono text-xs text-[#FCFAF9] font-bold">
+                            {totalQty}
+                          </span>
+                          <span className="text-[10px] text-[#B0A7A9] font-sans">Units</span>
+                        </div>
+                      </td>
+
+                      {/* Total Amount & Payment */}
+                      <td className="p-3.5 whitespace-nowrap">
+                        <div className="font-mono text-sm text-[#FFFFFF] font-bold">
+                          ₨ {ord.totalPKR.toLocaleString()}
+                        </div>
+                        <div className="text-[10px] font-mono text-[#A8A19F] flex items-center gap-1 mt-0.5">
+                          <Banknote className="w-3 h-3 text-[#E9C9CE]" />
+                          <span>{ord.paymentMethod}</span>
+                        </div>
+                      </td>
+
+                      {/* Live Fulfillment Status Selector */}
+                      <td className="p-3.5">
+                        <div className="relative inline-block w-36">
+                          <select
+                            value={ord.status}
+                            onChange={(e) => handleStatusChange(ord.id, e.target.value as OrderStatus)}
+                            className={`w-full py-1.5 px-2.5 rounded text-[11px] font-mono uppercase tracking-wider border focus:outline-none transition-all cursor-pointer ${getStatusBadgeClass(
+                              ord.status
+                            )}`}
+                          >
+                            <option value="Pending" className="bg-[#141213] text-amber-300">Pending</option>
+                            <option value="Processing" className="bg-[#141213] text-blue-300">Processing</option>
+                            <option value="Dispatched" className="bg-[#141213] text-indigo-300">Dispatched</option>
+                            <option value="Shipped" className="bg-[#141213] text-purple-300">Shipped</option>
+                            <option value="Delivered" className="bg-[#141213] text-emerald-300">Delivered</option>
+                            <option value="Cancelled" className="bg-[#141213] text-red-300">Cancelled</option>
+                          </select>
+                        </div>
+                      </td>
+
+                      {/* Actions: View Details Button */}
+                      <td className="p-3.5 text-right whitespace-nowrap space-x-2">
+                        <button
+                          onClick={() => setSelectedOrder(ord)}
+                          className="px-3.5 py-1.5 bg-[#E9C9CE] text-[#171515] hover:bg-[#F3D7DC] rounded text-xs font-semibold inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          title="View Complete Customer & Order Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Details</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteOrder(ord.id)}
+                          className="p-1.5 bg-[#1A1718] border border-[#2B2527] hover:border-red-500 text-[#7A7375] hover:text-red-400 rounded transition-colors inline-block cursor-pointer"
+                          title="Delete order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Comprehensive Order Details Modal */}
+      {/* COMPREHENSIVE ORDER & CUSTOMER DETAILS MODAL */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#141213] border border-[#242022] rounded-lg w-full max-w-2xl p-6 sm:p-7 space-y-6 my-8 shadow-2xl relative text-xs">
-            {/* Modal Header */}
+          <div className="bg-[#141213] border border-[#242022] rounded-xl w-full max-w-2xl p-6 sm:p-7 space-y-6 my-8 shadow-2xl relative text-xs animate-in fade-in duration-200">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-[#242022] pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-[#E9C9CE] font-bold">{selectedOrder.id}</span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono text-base text-[#E9C9CE] font-bold">{selectedOrder.id}</span>
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase border ${getStatusBadgeClass(
+                    className={`px-2.5 py-0.5 rounded text-[10px] font-mono uppercase border ${getStatusBadgeClass(
                       selectedOrder.status
                     )}`}
                   >
                     {selectedOrder.status}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#7A7375] mt-1">Booked on {selectedOrder.orderDate}</p>
+                <p className="text-[11px] text-[#7A7375]">Booked on {selectedOrder.orderDate}</p>
               </div>
 
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1"
+                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1.5 rounded-lg hover:bg-[#1A1718]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Customer Details & Shipping Address 2-Column Grid */}
+            {/* 2-Column: Customer Information & Delivery Address */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Customer Profile */}
-              <div className="bg-[#1A1718] p-4 rounded border border-[#2B2527] space-y-2.5">
-                <div className="text-[10px] uppercase tracking-wider text-[#E9C9CE] font-mono flex items-center gap-1.5 font-medium">
-                  <User className="w-3 h-3 text-[#E9C9CE]" />
-                  <span>Customer Information</span>
+              {/* Customer Info Card */}
+              <div className="bg-[#1A1718] p-4 rounded-lg border border-[#2B2527] space-y-3">
+                <div className="text-[10px] uppercase tracking-wider text-[#E9C9CE] font-mono flex items-center gap-1.5 font-semibold">
+                  <User className="w-3.5 h-3.5 text-[#E9C9CE]" />
+                  <span>Customer Personal Details</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="font-serif text-base text-[#FFFFFF]">{selectedOrder.customerName}</div>
-                  <div className="flex items-center gap-2 text-[#B0A7A9] font-mono">
-                    <Phone className="w-3 h-3 text-[#7A7375]" />
-                    <span>{selectedOrder.customerPhone}</span>
+
+                <div className="space-y-1.5">
+                  <div className="font-serif text-base text-[#FFFFFF] font-medium">
+                    {selectedOrder.customerName}
                   </div>
-                  <div className="flex items-center gap-2 text-[#7A7375]">
-                    <Mail className="w-3 h-3 text-[#7A7375]" />
-                    <span>{selectedOrder.customerEmail}</span>
+                  <div className="flex items-center gap-2 text-[#D4CDCE] font-mono text-xs">
+                    <Phone className="w-3.5 h-3.5 text-[#E9C9CE]" />
+                    <a href={`tel:${selectedOrder.customerPhone}`} className="hover:underline">
+                      {selectedOrder.customerPhone}
+                    </a>
                   </div>
+                  <div className="flex items-center gap-2 text-[#7A7375] text-xs">
+                    <Mail className="w-3.5 h-3.5 text-[#7A7375]" />
+                    <a href={`mailto:${selectedOrder.customerEmail}`} className="hover:underline">
+                      {selectedOrder.customerEmail}
+                    </a>
+                  </div>
+                </div>
+
+                {/* Quick WhatsApp / Direct Call Buttons */}
+                <div className="pt-2 flex items-center gap-2 border-t border-[#2B2527]">
+                  <a
+                    href={`https://wa.me/${selectedOrder.customerPhone.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-1.5 bg-[#25D366]/20 border border-[#25D366]/40 hover:bg-[#25D366]/30 text-[#25D366] rounded text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    <span>WhatsApp</span>
+                  </a>
+                  <a
+                    href={`tel:${selectedOrder.customerPhone}`}
+                    className="flex-1 py-1.5 bg-[#141213] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Phone className="w-3 h-3 text-[#E9C9CE]" />
+                    <span>Call Customer</span>
+                  </a>
                 </div>
               </div>
 
-              {/* Delivery Address (Oder Bhejne Ka Pata) */}
-              <div className="bg-[#1A1718] p-4 rounded border border-[#2B2527] space-y-2.5">
-                <div className="text-[10px] uppercase tracking-wider text-[#E9C9CE] font-mono flex items-center gap-1.5 font-medium">
-                  <MapPin className="w-3 h-3 text-[#E9C9CE]" />
-                  <span>Delivery Address (Oder Bhejne Ka Pata)</span>
+              {/* Delivery Destination Address */}
+              <div className="bg-[#1A1718] p-4 rounded-lg border border-[#2B2527] space-y-3">
+                <div className="text-[10px] uppercase tracking-wider text-[#E9C9CE] font-mono flex items-center gap-1.5 font-semibold">
+                  <MapPin className="w-3.5 h-3.5 text-[#E9C9CE]" />
+                  <span>Delivery Address</span>
                 </div>
+
                 <div className="space-y-1 text-[#D4CDCE]">
-                  <p className="font-medium text-[#FFFFFF]">{selectedOrder.shippingAddress.street}</p>
-                  <p>
-                    {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.province} - {selectedOrder.shippingAddress.postalCode}
+                  <p className="font-medium text-[#FFFFFF] text-xs">
+                    {selectedOrder.shippingAddress.street}
                   </p>
+                  <p className="text-xs">
+                    {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.province}{' '}
+                    {selectedOrder.shippingAddress.postalCode && `- ${selectedOrder.shippingAddress.postalCode}`}
+                  </p>
+                  <p className="text-[11px] text-[#7A7375]">Country: Pakistan</p>
                   {selectedOrder.shippingAddress.deliveryNotes && (
-                    <div className="pt-1.5 border-t border-[#2B2527] text-[10px] text-[#C58C97]">
+                    <div className="mt-2 p-2 rounded bg-[#241B1D] border border-[#3E282D] text-[11px] text-[#E9C9CE]">
                       <strong>Rider Note:</strong> {selectedOrder.shippingAddress.deliveryNotes}
                     </div>
                   )}
@@ -747,37 +976,69 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            {/* Purchased Items List */}
-            <div className="space-y-3">
-              <div className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono font-semibold">
-                Ordered Products Breakdown
+            {/* Ordered Products Breakdown */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono font-semibold">
+                  Ordered Products Breakdown ({selectedOrder.items.length} line items)
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#262123] border border-[#3A3134] rounded-full text-xs font-mono text-[#E9C9CE]">
+                  <Package className="w-3.5 h-3.5 text-[#E9C9CE]" />
+                  <span>Total Quantity: <strong>{selectedOrder.items.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0)} Units</strong></span>
+                </div>
               </div>
-              <div className="bg-[#1A1718] rounded border border-[#2B2527] divide-y divide-[#2B2527]">
+              <div className="bg-[#1A1718] rounded-lg border border-[#2B2527] divide-y divide-[#2B2527] overflow-hidden">
                 {selectedOrder.items.map((item, idx) => (
-                  <div key={idx} className="p-3 flex items-center justify-between gap-4">
+                  <div key={idx} className="p-3.5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      {item.image && (
-                        <div className="w-10 h-10 rounded bg-[#262123] overflow-hidden shrink-0 border border-[#3A3134]">
+                      {item.image ? (
+                        <div className="w-12 h-12 rounded bg-[#262123] overflow-hidden shrink-0 border border-[#3A3134]">
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded bg-[#262123] border border-[#3A3134] flex items-center justify-center text-[#7A7375]">
+                          <Package className="w-5 h-5" />
                         </div>
                       )}
                       <div>
                         <div className="font-serif text-sm text-[#FFFFFF]">{item.name}</div>
-                        <div className="text-[10px] text-[#7A7375] font-mono">
-                          PKR {item.pricePKR.toLocaleString()} × {item.quantity}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {item.brand && (
+                            <span className="px-2 py-0.5 rounded bg-[#262123] text-[#E9C9CE] text-[10px] font-mono border border-[#3A3134]">
+                              {item.brand}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span className="px-2 py-0.5 rounded bg-[#262123] text-[#D4CDCE] text-[10px] font-mono border border-[#3A3134]">
+                              Color: {item.color}
+                            </span>
+                          )}
+                          {item.size && (
+                            <span className="px-2 py-0.5 rounded bg-[#262123] text-[#D4CDCE] text-[10px] font-mono border border-[#3A3134]">
+                              Size: {item.size}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-[#7A7375] font-mono mt-1">
+                          ₨ {item.pricePKR.toLocaleString()} × {item.quantity} Unit(s)
                         </div>
                       </div>
                     </div>
-                    <div className="font-mono text-[#FFFFFF] font-medium">
-                      PKR {(item.pricePKR * item.quantity).toLocaleString()}
+                    <div className="text-right">
+                      <div className="font-mono text-sm text-[#FFFFFF] font-medium">
+                        ₨ {(item.pricePKR * item.quantity).toLocaleString()}
+                      </div>
+                      <div className="text-[10px] font-mono text-[#E9C9CE] mt-0.5">
+                        Qty: {item.quantity}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Payment & Financial Summary in PKR */}
-            <div className="bg-[#1A1718] p-4 rounded border border-[#2B2527] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Financial Summary */}
+            <div className="bg-[#1A1718] p-4 rounded-lg border border-[#2B2527] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono block">Payment Mode</span>
                 <span className="text-sm font-medium text-[#FFFFFF] flex items-center gap-1.5 mt-0.5">
@@ -785,34 +1046,34 @@ export default function AdminOrdersPage() {
                   <span>{selectedOrder.paymentMethod}</span>
                 </span>
                 <span className="text-[10px] font-mono text-emerald-400 block mt-0.5">
-                  Status: {selectedOrder.paymentStatus}
+                  Payment Status: {selectedOrder.paymentStatus}
                 </span>
               </div>
 
               <div className="space-y-1 text-right border-t sm:border-t-0 sm:border-l border-[#2B2527] pt-2 sm:pt-0 sm:pl-6 font-mono text-xs">
                 <div className="flex justify-between sm:justify-end gap-6 text-[#7A7375]">
                   <span>Subtotal:</span>
-                  <span>PKR {selectedOrder.subtotalPKR.toLocaleString()}</span>
+                  <span>₨ {selectedOrder.subtotalPKR.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between sm:justify-end gap-6 text-[#7A7375]">
-                  <span>Shipping Fee:</span>
-                  <span>PKR {selectedOrder.shippingFeePKR.toLocaleString()}</span>
+                  <span>Delivery Courier:</span>
+                  <span>{selectedOrder.shippingFeePKR === 0 ? 'Complimentary (PKR 0)' : `₨ ${selectedOrder.shippingFeePKR}`}</span>
                 </div>
                 <div className="flex justify-between sm:justify-end gap-6 text-[#FFFFFF] font-bold text-sm pt-1 border-t border-[#2B2527]">
-                  <span>Grand Total:</span>
-                  <span className="text-[#E9C9CE]">PKR {selectedOrder.totalPKR.toLocaleString()}</span>
+                  <span>Total Amount:</span>
+                  <span className="text-[#E9C9CE]">₨ {selectedOrder.totalPKR.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
-            {/* Change Fulfillment Status Control */}
-            <div className="p-4 bg-[#211E1F] border border-[#2B2527] rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Update Fulfillment Status Control */}
+            <div className="p-4 bg-[#211E1F] border border-[#2B2527] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <label className="text-[11px] font-medium text-[#FFFFFF] block">
-                  Update Fulfillment Status:
+                <label className="text-xs font-semibold text-[#FFFFFF] block">
+                  Change Fulfillment Status:
                 </label>
-                <span className="text-[10px] text-[#7A7375]">
-                  Updates delivery tracking and customer records immediately.
+                <span className="text-[11px] text-[#7A7375]">
+                  Updates delivery status in real-time for customer tracking.
                 </span>
               </div>
 
@@ -833,24 +1094,49 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Modal Bottom Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#242022]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#242022]">
               <button
-                onClick={() => window.print()}
-                className="px-4 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded flex items-center gap-2 transition-colors cursor-pointer"
+                onClick={() => handleCopyCustomerSummary(selectedOrder)}
+                className="px-3.5 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-[#E9C9CE]" />
-                <span>Print Invoice</span>
+                {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#E9C9CE]" />}
+                <span>{copiedSummary ? 'Copied Summary!' : 'Copy Summary for WhatsApp'}</span>
               </button>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="px-5 py-2 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-medium rounded transition-colors cursor-pointer"
-              >
-                Done
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-[#1A1718] border border-[#2B2527] hover:border-[#E9C9CE] text-[#FCFAF9] rounded text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[#E9C9CE]" />
+                  <span>Print Slip</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-5 py-2 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-semibold text-xs rounded transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex items-center justify-center text-xs text-[#7A7375] font-mono">
+          Loading Customer Orders...
+        </div>
+      }
+    >
+      <AdminOrdersContent />
+    </Suspense>
   );
 }

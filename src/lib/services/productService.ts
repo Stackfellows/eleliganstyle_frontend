@@ -1,5 +1,7 @@
 import { PRODUCTS } from '../data/products';
+import customProducts from '../data/custom_products.json';
 import { Product, MainCategory, SubCategory, Audience } from '../types';
+import { getStoredProducts } from '../adminStore';
 
 export interface ProductFilters {
   mainCategory?: MainCategory;
@@ -13,8 +15,16 @@ export interface ProductFilters {
   query?: string;
 }
 
+export function getAllBaseProducts(): Product[] {
+  if (typeof window !== 'undefined') {
+    return getStoredProducts();
+  }
+  const customList = Array.isArray(customProducts) ? (customProducts as Product[]) : [];
+  return [...customList, ...PRODUCTS];
+}
+
 export function getProducts(filters: ProductFilters = {}): Product[] {
-  let result = [...PRODUCTS];
+  let result = [...getAllBaseProducts()];
 
   if (filters.mainCategory) {
     result = result.filter((p) => p.mainCategory === filters.mainCategory);
@@ -52,7 +62,8 @@ export function getProducts(filters: ProductFilters = {}): Product[] {
         p.subtitle.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         p.mainCategory.toLowerCase().includes(q) ||
-        p.subcategory.toLowerCase().includes(q)
+        p.subcategory.toLowerCase().includes(q) ||
+        (p.brand && p.brand.toLowerCase().includes(q))
     );
   }
 
@@ -74,11 +85,13 @@ export function getProducts(filters: ProductFilters = {}): Product[] {
 }
 
 export function getProductBySlug(slug: string): Product | undefined {
-  return PRODUCTS.find((p) => p.slug === slug);
+  const all = getAllBaseProducts();
+  return all.find((p) => p.slug === slug || p.id === slug);
 }
 
 export function getRelatedProducts(product: Product, limit = 4): Product[] {
-  return PRODUCTS.filter(
+  const all = getAllBaseProducts();
+  return all.filter(
     (p) => p.id !== product.id && (p.subcategory === product.subcategory || p.mainCategory === product.mainCategory)
   ).slice(0, limit);
 }

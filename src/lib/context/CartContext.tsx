@@ -5,7 +5,7 @@ import { CartItem, Product, ProductVariant } from '../types';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, variant?: ProductVariant, quantity?: number) => void;
+  addToCart: (product: Product, variant?: ProductVariant, quantity?: number, color?: string, size?: string) => void;
   removeFromCart: (productId: string, variantId?: string) => void;
   updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
@@ -48,10 +48,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart]);
 
-  const addToCart = (product: Product, variant?: ProductVariant, quantity = 1) => {
+  const addToCart = (product: Product, variant?: ProductVariant, quantity = 1, color?: string, size?: string) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.product.id === product.id && item.selectedVariant?.id === variant?.id
+        (item) =>
+          item.product.id === product.id &&
+          item.selectedVariant?.id === variant?.id &&
+          item.selectedColor === color &&
+          item.selectedSize === size
       );
 
       if (existingIndex > -1) {
@@ -60,7 +64,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return updated;
       }
 
-      return [...prev, { product, selectedVariant: variant, quantity }];
+      return [...prev, { product, selectedVariant: variant, selectedColor: color, selectedSize: size, quantity }];
     });
   };
 

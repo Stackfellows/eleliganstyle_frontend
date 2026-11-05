@@ -1,126 +1,157 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, Package, Truck, CheckCircle2, Clock, MapPin, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Search, Package, Truck, CheckCircle2, Clock, MapPin, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
-export default function TrackOrderPage() {
-  const [orderNumber, setOrderNumber] = useState('');
+function TrackOrderContent() {
+  const searchParams = useSearchParams();
+  const initialId = searchParams.get('id') || '';
+
+  const [orderNumber, setOrderNumber] = useState(initialId);
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [trackingResult, setTrackingResult] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleTrack = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderNumber.trim()) return;
+  useEffect(() => {
+    if (initialId) {
+      setOrderNumber(initialId);
+      performSearch(initialId, '');
+    }
+  }, [initialId]);
+
+  const performSearch = async (ordNum: string, contactInfo: string) => {
+    const targetOrder = ordNum.trim().toLowerCase();
+    const targetContact = contactInfo.trim().toLowerCase();
+
+    if (!targetOrder && !targetContact) return;
 
     setIsSearching(true);
     setTrackingResult(null);
+    setNotFound(false);
 
     try {
-      const res = await fetch('/api/orders');
-      const data = await res.json();
+      let candidateOrders: any[] = [];
 
-      if (data.success && data.orders) {
-        const found = data.orders.find(
-          (o: any) =>
-            o.id.toLowerCase() === orderNumber.trim().toLowerCase() ||
-            o.id.toLowerCase() === `ord-pk-${orderNumber.trim().toLowerCase()}` ||
-            o.customerPhone.includes(orderNumber.trim()) ||
-            o.customerEmail.toLowerCase() === emailOrPhone.trim().toLowerCase()
-        );
-
-        if (found) {
-          setTrackingResult({
-            orderId: found.id,
-            placedDate: new Date(found.createdAt).toLocaleString(),
-            estimatedDelivery: '2-3 Business Days via Express Courier',
-            carrier: 'TCS / Leopards Courier Pakistan',
-            trackingNumber: `PAK-EXPRESS-${found.id}`,
-            shippingAddress: `${found.shippingAddress.street || ''}, ${found.shippingAddress.city || 'Lahore'}`,
-            status: found.status,
-            customerName: found.customerName,
-            customerPhone: found.customerPhone,
-            paymentMethod: found.paymentMethod,
-            totalPKR: found.totalPKR,
-            items: found.items || [],
-            steps: [
-              {
-                title: 'Order Placed & Confirmed',
-                description: `Order received via ${found.paymentMethod}. Total PKR ${found.totalPKR.toLocaleString()}.`,
-                date: new Date(found.createdAt).toLocaleDateString(),
-                done: true
-              },
-              {
-                title: 'Quality Check & Packing',
-                description: 'Inspected and packaged at central fulfillment hub.',
-                date: found.status !== 'Pending' ? 'In Progress' : 'Pending',
-                done: found.status !== 'Pending'
-              },
-              {
-                title: 'Dispatched to Rider',
-                description: 'Assigned to delivery courier rider.',
-                date: ['Dispatched', 'Shipped', 'Delivered'].includes(found.status) ? 'Dispatched' : 'Awaiting',
-                done: ['Dispatched', 'Shipped', 'Delivered'].includes(found.status)
-              },
-              {
-                title: 'Delivered to Doorstep',
-                description: 'Handed over to customer.',
-                date: found.status === 'Delivered' ? 'Completed' : 'Estimated 2 Days',
-                done: found.status === 'Delivered'
-              }
-            ]
-          });
-          setIsSearching(false);
-          return;
+      // 1. Fetch from server API
+      try {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.orders)) {
+          candidateOrders = [...data.orders];
         }
+      } catch (e) {
+        console.error('API orders fetch error', e);
       }
 
-      // Default fallback if search didn't match exact order id
-      setTrackingResult({
-        orderId: orderNumber.toUpperCase().startsWith('ORD-') ? orderNumber.toUpperCase() : `ORD-PK-${orderNumber.toUpperCase()}`,
-        placedDate: 'Today',
-        estimatedDelivery: '2-3 Business Days via Express Courier',
-        carrier: 'TCS / Leopards Courier Pakistan',
-        trackingNumber: 'PAK-EXPRESS-984102',
-        shippingAddress: 'House 42-B, Block C, Gulberg III, Lahore',
-        status: 'Processing',
-        items: [
-          { productName: 'Rouge Opéra Satin Silk Lipstick', quantity: 1, pricePKR: 12500 }
-        ],
-        steps: [
-          {
-            title: 'Order Placed & Confirmed',
-            description: 'Order received and logged in system.',
-            date: 'Today',
-            done: true
-          },
-          {
-            title: 'Quality Check & Packing',
-            description: 'Inspected and packaged at central hub.',
-            date: 'Today',
-            done: true
-          },
-          {
-            title: 'Dispatched to Rider',
-            description: 'Assigned to courier rider for local dispatch.',
-            date: 'Expected Tomorrow',
-            done: false
-          },
-          {
-            title: 'Delivered to Doorstep',
-            description: 'Handed over to customer.',
-            date: 'Estimated 2 Days',
-            done: false
+      // 2. Fetch from local user orders
+      try {
+        const local = localStorage.getItem('elegant_user_orders');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((po) => {
+              if (!candidateOrders.some((co) => co.id === po.id)) {
+                candidateOrders.push(po);
+              }
+            });
           }
-        ]
+        }
+      } catch (e) {
+        console.error('Local orders fetch error', e);
+      }
+
+      // Find match
+      const found = candidateOrders.find((o: any) => {
+        const orderId = (o.id || '').toLowerCase();
+        const customerPhone = (o.customerPhone || '').toLowerCase();
+        const customerEmail = (o.customerEmail || '').toLowerCase();
+
+        const matchesOrder =
+          targetOrder &&
+          (orderId === targetOrder ||
+            orderId === `ord-pk-${targetOrder}` ||
+            orderId.includes(targetOrder) ||
+            customerPhone.includes(targetOrder));
+
+        const matchesContact =
+          targetContact &&
+          (customerEmail === targetContact || customerPhone.includes(targetContact));
+
+        if (targetOrder && targetContact) {
+          return matchesOrder || matchesContact;
+        }
+        return matchesOrder || matchesContact;
       });
-      setIsSearching(false);
+
+      if (found) {
+        const status = found.status || 'Processing';
+        const isDelivered = status === 'Delivered';
+        const isDispatched = ['Dispatched', 'Shipped', 'Delivered'].includes(status);
+        const isProcessing = ['Processing', 'Dispatched', 'Shipped', 'Delivered'].includes(status);
+
+        setTrackingResult({
+          orderId: found.id,
+          placedDate: new Date(found.createdAt || Date.now()).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          }),
+          estimatedDelivery: isDelivered ? 'Delivered to Customer' : '2-3 Business Days via Express Courier',
+          carrier: 'TCS / Leopards Express Courier Pakistan',
+          trackingNumber: `PAK-EXP-${found.id.replace(/[^0-9]/g, '') || '9841'}`,
+          shippingAddress: `${found.shippingAddress?.street || ''}, ${found.shippingAddress?.city || 'Lahore'}`,
+          status: status,
+          customerName: found.customerName,
+          customerPhone: found.customerPhone,
+          paymentMethod: found.paymentMethod,
+          totalPKR: found.totalPKR,
+          items: found.items || [],
+          steps: [
+            {
+              title: 'Order Placed & Confirmed',
+              description: `Order received via ${found.paymentMethod}. Total verified in Maison ledger.`,
+              date: new Date(found.createdAt || Date.now()).toLocaleDateString(),
+              done: true,
+            },
+            {
+              title: 'Quality Check & Luxury Packaging',
+              description: 'Inspected and packaged at central fulfillment hub in Lahore.',
+              date: isProcessing ? 'Completed' : 'Pending Verification',
+              done: isProcessing,
+            },
+            {
+              title: 'Dispatched to Express Courier',
+              description: 'Handed over to TCS / Leopards logistics rider for doorstep delivery.',
+              date: isDispatched ? 'In Transit' : 'Scheduled',
+              done: isDispatched,
+            },
+            {
+              title: 'Delivered to Residence',
+              description: 'Insured package delivered and signed by customer.',
+              date: isDelivered ? 'Completed' : 'Estimated 2 Days',
+              done: isDelivered,
+            },
+          ],
+        });
+        setNotFound(false);
+      } else {
+        setNotFound(true);
+      }
     } catch (err) {
       console.error('Tracking fetch error:', err);
+      setNotFound(true);
+    } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleTrack = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(orderNumber, emailOrPhone);
   };
 
   const handleDemoFill = () => {
@@ -140,7 +171,7 @@ export default function TrackOrderPage() {
             Track Your Order
           </h1>
           <p className="text-xs sm:text-sm text-[#6E6767] font-light max-w-lg mx-auto leading-relaxed">
-            Follow the bespoke journey of your formulations and hand-stitched leather goods from our European ateliers to your residence.
+            Follow the live status, courier transit milestones, and doorstep delivery of your orders across Pakistan.
           </p>
         </div>
       </div>
@@ -154,12 +185,12 @@ export default function TrackOrderPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-widest text-[#171515] font-medium block">
-                  Order Number *
+                  Order Reference Number *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. ELG-8942"
+                  placeholder="e.g. ORD-PK-9821"
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   className="w-full bg-[#FFFFFF] border border-[#ECE7E6] px-4 py-3 text-sm text-[#171515] focus:outline-none focus:border-[#171515] transition-colors"
@@ -168,12 +199,11 @@ export default function TrackOrderPage() {
 
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-widest text-[#171515] font-medium block">
-                  Email or Phone Number *
+                  Registered Email or Phone
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="name@domain.com or phone"
+                  placeholder="name@domain.com or 0300..."
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
                   className="w-full bg-[#FFFFFF] border border-[#ECE7E6] px-4 py-3 text-sm text-[#171515] focus:outline-none focus:border-[#171515] transition-colors"
@@ -187,7 +217,7 @@ export default function TrackOrderPage() {
                 onClick={handleDemoFill}
                 className="text-xs text-[#C58C97] hover:text-[#171515] underline transition-colors"
               >
-                Auto-fill demo order (ELG-8942)
+                Auto-fill demo order (ORD-PK-9821)
               </button>
 
               <button
@@ -196,7 +226,7 @@ export default function TrackOrderPage() {
                 className="w-full sm:w-auto bg-[#171515] text-[#FCFAF9] text-xs uppercase tracking-widest px-8 py-3.5 hover:bg-[#292526] transition-colors flex items-center justify-center gap-2"
               >
                 {isSearching ? (
-                  <span>Locating Archive...</span>
+                  <span>Locating Shipment...</span>
                 ) : (
                   <>
                     <Search className="w-3.5 h-3.5" />
@@ -207,6 +237,19 @@ export default function TrackOrderPage() {
             </div>
           </form>
         </div>
+
+        {/* Not Found Alert */}
+        {notFound && (
+          <div className="mt-8 p-6 bg-red-50/60 border border-red-200 text-left space-y-2 animate-in fade-in">
+            <div className="flex items-center gap-2 text-red-800 font-medium text-sm">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <span>No Shipment Found for Reference: &ldquo;{orderNumber}&rdquo;</span>
+            </div>
+            <p className="text-xs text-red-700 leading-relaxed font-light">
+              Please verify your Order ID (such as <strong>ORD-PK-9821</strong>) or phone number entered at checkout. If you just placed an order, please allow a few minutes for courier dispatch synchronization, or contact our private client concierge.
+            </p>
+          </div>
+        )}
 
         {/* Tracking Result Display */}
         {trackingResult && (
@@ -236,14 +279,18 @@ export default function TrackOrderPage() {
 
             {/* Timeline Progress */}
             <div className="bg-[#FCFAF9] border border-[#ECE7E6] p-6 sm:p-10 space-y-8">
-              <h4 className="font-serif text-xl text-[#171515] border-b border-[#ECE7E6] pb-3">
-                Consignment Milestones
-              </h4>
+              <div className="flex items-center justify-between border-b border-[#ECE7E6] pb-3">
+                <h4 className="font-serif text-xl text-[#171515]">
+                  Consignment Milestones
+                </h4>
+                <span className="px-3 py-1 text-[10px] uppercase tracking-wider font-semibold rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  {trackingResult.status}
+                </span>
+              </div>
 
               <div className="relative pl-6 sm:pl-8 space-y-8 border-l-2 border-[#ECE7E6]">
                 {trackingResult.steps.map((step: any, index: number) => (
                   <div key={index} className="relative">
-                    {/* Circle icon */}
                     <div
                       className={`absolute -left-[31px] sm:-left-[39px] top-0 w-6 h-6 rounded-full flex items-center justify-center border-2 ${
                         step.done
@@ -252,7 +299,7 @@ export default function TrackOrderPage() {
                       }`}
                     >
                       {step.done ? (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                       ) : (
                         <Clock className="w-3 h-3" />
                       )}
@@ -289,7 +336,7 @@ export default function TrackOrderPage() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-[#C58C97] shrink-0" />
             <p className="text-xs text-[#6E6767] font-light">
-              Questions regarding delivery timing or white-glove signature? Contact our private concierge team.
+              Questions regarding delivery timing or courier hand-off? Contact our private concierge team.
             </p>
           </div>
           <Link
@@ -302,5 +349,19 @@ export default function TrackOrderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center text-xs text-[#6E6767]">
+          Loading tracking...
+        </div>
+      }
+    >
+      <TrackOrderContent />
+    </Suspense>
   );
 }

@@ -1,87 +1,160 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const HERO_SLIDES = [
+  {
+    id: 'subtle-elegance',
+    image: '/Subtle Elegance Beauty Collection.png',
+    alt: 'ELEGANTSTYLE — Subtle Elegance Beauty Collection',
+    href: '/collections',
+  },
+  {
+    id: 'botanical-skincare',
+    image: '/Botanical Skincare Still Life.png',
+    alt: 'ELEGANTSTYLE — Botanical Skincare Still Life',
+    href: '/beauty/skin-care',
+  },
+];
 
 export default function HeroSection() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Mobile Touch Swipe Handling
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  // Auto-advance carousel every 6.5 seconds when not hovered
+  useEffect(() => {
+    if (isHovered) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [isHovered]);
+
+  const handlePrev = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  };
+
+  const handleNext = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  };
+
+  // Touch Swipe Handlers for mobile phones & tablets
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 45;
+    const isRightSwipe = distance < -45;
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const slide = HERO_SLIDES[currentSlide];
+
   return (
-    <section className="relative w-full min-h-[85vh] lg:min-h-[90vh] bg-[#F8F5F4] overflow-hidden flex items-center border-b border-[#ECE7E6]">
-      {/* Background Image with slow luxury scale animation */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=2000&auto=format&fit=crop"
-          alt="ElegantStyle Luxury Beauty & Fashion"
-          fill
-          priority
-          className="object-cover object-center filter brightness-[0.92] contrast-[0.98] transition-transform duration-10000 ease-out hover:scale-105"
-        />
-        {/* Soft luxury editorial overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FFFFFF]/95 via-[#FFFFFF]/80 to-transparent sm:w-2/3 lg:w-1/2" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#FFFFFF] via-transparent to-transparent h-32 bottom-0" />
+    <section
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="relative w-full aspect-[2172/724] min-h-[160px] sm:min-h-[260px] md:min-h-[380px] lg:min-h-[460px] xl:min-h-[520px] bg-[#FCFAF9] overflow-hidden select-none border-b border-[#ECE7E6] touch-pan-y"
+    >
+      {/* Carousel Banner Slide */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={slide.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.7, ease: 'easeInOut' }}
+          className="absolute inset-0 w-full h-full"
+        >
+          <Link href={slide.href} className="block relative w-full h-full cursor-pointer">
+            <Image
+              src={slide.image}
+              alt={slide.alt}
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 2172px"
+            />
+          </Link>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Luxury Left/Right Carousel Controls (Touch-optimized) */}
+      <div className="absolute inset-y-0 left-2 sm:left-6 flex items-center z-20 pointer-events-none">
+        <button
+          type="button"
+          onClick={handlePrev}
+          aria-label="Previous Banner"
+          className="pointer-events-auto w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#FFFFFF]/90 hover:bg-[#171515] text-[#171515] hover:text-[#FCFAF9] border border-[#ECE7E6] transition-all flex items-center justify-center shadow-md backdrop-blur-xs cursor-pointer hover:scale-105 active:scale-95"
+        >
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+        </button>
       </div>
 
-      {/* Content Overlay */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-xl space-y-6"
+      <div className="absolute inset-y-0 right-2 sm:right-6 flex items-center z-20 pointer-events-none">
+        <button
+          type="button"
+          onClick={handleNext}
+          aria-label="Next Banner"
+          className="pointer-events-auto w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#FFFFFF]/90 hover:bg-[#171515] text-[#171515] hover:text-[#FCFAF9] border border-[#ECE7E6] transition-all flex items-center justify-center shadow-md backdrop-blur-xs cursor-pointer hover:scale-105 active:scale-95"
         >
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 bg-[#171515] text-[#FCFAF9] px-3.5 py-1.5 text-[10px] tracking-[0.3em] font-sans uppercase">
-            <Sparkles className="w-3 h-3 text-[#E9C9CE]" />
-            <span>BEAUTY • FASHION • EVERYDAY LUXURY</span>
-          </div>
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+        </button>
+      </div>
 
-          {/* Heading */}
-          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-light text-[#171515] leading-[1.08] tracking-tight">
-            The Form of <br />
-            <span className="italic font-normal text-[#C58C97]">Subtle Elegance</span>
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base text-[#292526] font-sans font-light leading-relaxed max-w-md">
-            Bio-fermented botanical skincare formulations paired with Italian calfskin leather goods. Designed with quiet restraint in Paris and Florence.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-4 pt-4 font-sans text-xs uppercase tracking-[0.2em]">
-            <Link
-              href="/collections"
-              className="bg-[#171515] text-[#FCFAF9] py-4 px-8 flex items-center gap-3 hover:bg-[#292526] transition-all hover:gap-4 shadow-sm"
-            >
-              <span>Shop Collection</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              href="/journal"
-              className="bg-[#FFFFFF]/90 backdrop-blur-xs border border-[#ECE7E6] text-[#171515] py-4 px-8 hover:bg-[#FFFFFF] hover:border-[#171515] transition-all"
-            >
-              <span>Explore Journal</span>
-            </Link>
-          </div>
-
-          {/* Editorial Badging */}
-          <div className="pt-8 border-t border-[#ECE7E6]/80 grid grid-cols-3 gap-4 text-[10px] uppercase tracking-widest text-[#6E6767] font-sans">
-            <div>
-              <span className="block font-medium text-[#171515]">100% Organic</span>
-              <span>French Flora</span>
-            </div>
-            <div>
-              <span className="block font-medium text-[#171515]">Tuscan Leather</span>
-              <span>Full-Grain Calfskin</span>
-            </div>
-            <div>
-              <span className="block font-medium text-[#171515]">Carbon Neutral</span>
-              <span>Express Delivery</span>
-            </div>
-          </div>
-        </motion.div>
+      {/* Slide Indicators / Pill Dots (Enhanced Touch Target) */}
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 p-1 bg-[#FFFFFF]/40 sm:bg-transparent rounded-full backdrop-blur-[2px]">
+        {HERO_SLIDES.map((s, idx) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentSlide(idx);
+            }}
+            className={`transition-all duration-300 h-1.5 sm:h-2 rounded-full cursor-pointer ${
+              currentSlide === idx
+                ? 'w-6 sm:w-8 bg-[#171515] shadow-xs'
+                : 'w-2 sm:w-2.5 bg-[#171515]/40 hover:bg-[#171515]/75'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
       </div>
     </section>
   );

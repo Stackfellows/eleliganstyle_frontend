@@ -1,24 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Flame, Sparkles, Tag, TrendingUp, Award, Layers } from 'lucide-react';
 import { PRODUCTS } from '@/lib/data/products';
+import { getStoredProducts } from '@/lib/adminStore';
+import { Product } from '@/lib/types';
 import ProductCard from '../product/ProductCard';
 
 type SectionKey = 'all' | 'featured' | 'sale' | 'bestsellers' | 'new';
 
 export default function ProductSummarySection() {
   const [activeSection, setActiveSection] = useState<SectionKey>('all');
+  const [productList, setProductList] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    setProductList(getStoredProducts());
+    const handleStorage = () => setProductList(getStoredProducts());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   // Featured items
-  const featuredItems = PRODUCTS.filter((p) => p.isFeatured || p.badge === 'AWARD WINNER').slice(0, 8);
+  const featuredItems = productList.filter((p) => p.isFeatured || p.badge === 'AWARD WINNER').slice(0, 8);
   // Products on Sale / Special pricing
-  const onSaleItems = PRODUCTS.filter((p) => p.originalPrice && p.originalPrice > p.price).slice(0, 8);
+  const onSaleItems = productList.filter((p) => p.originalPrice && p.originalPrice > p.price).slice(0, 8);
   // Best Selling products
-  const bestSellers = PRODUCTS.filter((p) => p.badge === 'BEST SELLER' || p.reviewCount >= 20).slice(0, 8);
+  const bestSellers = productList.filter((p) => p.badge === 'BEST SELLER' || p.reviewCount >= 20).slice(0, 8);
   // New Arrivals
-  const newArrivals = PRODUCTS.filter((p) => p.badge === 'NEW').slice(0, 8);
+  const newArrivals = productList.filter((p) => p.badge === 'NEW').slice(0, 8);
 
   const getActiveList = () => {
     switch (activeSection) {
@@ -32,14 +42,14 @@ export default function ProductSummarySection() {
         return newArrivals;
       case 'all':
       default:
-        return PRODUCTS.slice(0, 8);
+        return productList.slice(0, 8);
     }
   };
 
   const currentProducts = getActiveList();
 
   const sections = [
-    { id: 'all', label: 'All Curations', icon: Layers, count: PRODUCTS.length },
+    { id: 'all', label: 'All Curations', icon: Layers, count: productList.length },
     { id: 'featured', label: 'Featured Products', icon: Sparkles, count: featuredItems.length },
     { id: 'sale', label: 'Products on Sale', icon: Tag, count: onSaleItems.length },
     { id: 'bestsellers', label: 'Best Selling Products', icon: Flame, count: bestSellers.length },

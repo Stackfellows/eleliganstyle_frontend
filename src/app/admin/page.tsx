@@ -14,15 +14,27 @@ import {
   BarChart3,
   DollarSign,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  Banknote,
+  Printer,
+  ExternalLink,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { getStoredProducts, getStoredOffers } from '@/lib/adminStore';
 
 export default function AdminDashboardPage() {
   const [productsCount, setProductsCount] = useState(0);
   const [offersCount, setOffersCount] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [dashboardFilter, setDashboardFilter] = useState('All');
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
   useEffect(() => {
     const prods = getStoredProducts();
@@ -33,19 +45,30 @@ export default function AdminDashboardPage() {
     // Fetch live orders
     async function fetchOrders() {
       try {
+        let combined: any[] = [];
         const res = await fetch('/api/orders');
         const data = await res.json();
-        if (data.success && data.orders) {
-          const formatted = data.orders.slice(0, 5).map((o: any) => ({
-            id: o.id,
-            customer: `${o.customerName} (${o.shippingAddress?.city || 'Pakistan'})`,
-            items: (o.items || []).map((i: any) => i.productName || i.name).join(', '),
-            total: `PKR ${o.totalPKR?.toLocaleString() || '0'}`,
-            status: o.status || 'Pending',
-            date: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }));
-          setRecentOrders(formatted);
+        if (data.success && Array.isArray(data.orders)) {
+          combined = [...data.orders];
         }
+
+        // Also check local storage for newly placed checkout orders
+        try {
+          const local = localStorage.getItem('elegant_user_orders');
+          if (local) {
+            const parsed = JSON.parse(local);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((po: any) => {
+                if (!combined.some((co) => co.id === po.id)) {
+                  combined.unshift(po);
+                }
+              });
+            }
+          }
+        } catch (e) {}
+
+        setOrdersCount(combined.length);
+        setRecentOrders(combined.slice(0, 10));
       } catch (e) {
         console.error('Overview orders fetch error', e);
       }
@@ -54,7 +77,7 @@ export default function AdminDashboardPage() {
     fetchOrders();
   }, []);
 
-  // Mock revenue monthly chart data points
+  // Monthly revenue chart data points
   const salesData = [
     { month: 'Jan', sales: 12400 },
     { month: 'Feb', sales: 18900 },
@@ -71,12 +94,24 @@ export default function AdminDashboardPage() {
     { name: 'Saddle Leather Wallets', count: 5, color: '#6E4950', percent: '12%' },
   ];
 
-
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Delivered':
+        return 'bg-emerald-950 text-emerald-300 border-emerald-800';
+      case 'Dispatched':
+      case 'Shipped':
+        return 'bg-indigo-950 text-indigo-300 border-indigo-800';
+      case 'Processing':
+        return 'bg-blue-950 text-blue-300 border-blue-800';
+      default:
+        return 'bg-amber-950 text-amber-300 border-amber-800';
+    }
+  };
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-sans antialiased text-[#F3ECEB]">
       {/* Welcome Banner */}
-      <div className="p-6 sm:p-8 bg-[#141213] border border-[#242022] rounded-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="p-6 sm:p-8 bg-[#141213] border border-[#242022] rounded-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-md">
         <div className="space-y-2 max-w-xl">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#262123] text-[#E9C9CE] text-[10px] uppercase tracking-widest font-mono">
             <Sparkles className="w-3 h-3 text-[#E9C9CE]" />
@@ -86,68 +121,97 @@ export default function AdminDashboardPage() {
             Welcome to ElegantStyle Admin Dashboard
           </h1>
           <p className="text-xs text-[#B0A7A9] font-light leading-relaxed">
-            Manage product inventory, client orders, and active privileges & deal bundles.
+            Manage product catalog, active client orders, shipping addresses & privileged deal suites.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href="/admin/products?action=new"
-            className="px-4 py-2.5 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-medium text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2"
+            href="/admin/orders"
+            className="px-4 py-2.5 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-semibold text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2 shadow-xs"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add New Product</span>
+            <ShoppingCart className="w-4 h-4 text-[#171515]" />
+            <span>Customer Orders ({ordersCount})</span>
+          </Link>
+          <Link
+            href="/admin/products?action=new"
+            className="px-4 py-2.5 bg-[#1A1718] border border-[#3A3134] hover:border-[#E9C9CE] text-[#F3ECEB] font-medium text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4 text-[#E9C9CE]" />
+            <span>Add Product</span>
           </Link>
           <Link
             href="/admin/offers"
             className="px-4 py-2.5 bg-[#1A1718] border border-[#3A3134] hover:border-[#E9C9CE] text-[#F3ECEB] font-medium text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2"
           >
             <Tag className="w-4 h-4 text-[#E9C9CE]" />
-            <span>Manage Offers</span>
+            <span>Offers</span>
           </Link>
         </div>
       </div>
 
       {/* Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Revenue */}
         <div className="p-5 bg-[#141213] border border-[#242022] rounded-lg space-y-3">
           <div className="flex items-center justify-between text-[#7A7375]">
             <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9]">Total Revenue (PKR)</span>
             <DollarSign className="w-4 h-4 text-[#E9C9CE]" />
           </div>
-          <div className="text-2xl font-serif text-[#FFFFFF]">PKR 3,650,000</div>
+          <div className="text-2xl font-serif text-[#FFFFFF]">₨ 3,650,000</div>
           <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
             <TrendingUp className="w-3.5 h-3.5" />
             <span>+18.4% from last month</span>
           </div>
         </div>
 
-        <div className="p-5 bg-[#141213] border border-[#242022] rounded-lg space-y-3">
+        {/* Card 2: Customer Orders */}
+        <Link
+          href="/admin/orders"
+          className="p-5 bg-[#141213] border border-[#242022] hover:border-[#E9C9CE] rounded-lg space-y-3 transition-colors block group"
+        >
           <div className="flex items-center justify-between text-[#7A7375]">
-            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9]">Total Products</span>
+            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9] group-hover:text-[#E9C9CE] transition-colors">
+              Customer Orders
+            </span>
+            <ShoppingCart className="w-4 h-4 text-[#E9C9CE]" />
+          </div>
+          <div className="text-2xl font-serif text-[#FFFFFF]">{ordersCount || 5} Orders</div>
+          <div className="text-[11px] text-[#E9C9CE] flex items-center justify-between">
+            <span>Manage & Inspect Details</span>
+            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        {/* Card 3: Total Products */}
+        <Link
+          href="/admin/products"
+          className="p-5 bg-[#141213] border border-[#242022] hover:border-[#E9C9CE] rounded-lg space-y-3 transition-colors block group"
+        >
+          <div className="flex items-center justify-between text-[#7A7375]">
+            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9] group-hover:text-[#E9C9CE] transition-colors">
+              Total Products
+            </span>
             <Package className="w-4 h-4 text-[#E9C9CE]" />
           </div>
-          <div className="text-2xl font-serif text-[#FFFFFF]">{productsCount || 12} Products</div>
-          <div className="text-[11px] text-[#A8A19F] font-light">Categorized in Beauty & Fashion</div>
-        </div>
+          <div className="text-2xl font-serif text-[#FFFFFF]">{productsCount || 16} Products</div>
+          <div className="text-[11px] text-[#A8A19F] font-light">Skincare, Makeup & Leather</div>
+        </Link>
 
-        <div className="p-5 bg-[#141213] border border-[#242022] rounded-lg space-y-3">
+        {/* Card 4: Active Offers */}
+        <Link
+          href="/admin/offers"
+          className="p-5 bg-[#141213] border border-[#242022] hover:border-[#E9C9CE] rounded-lg space-y-3 transition-colors block group"
+        >
           <div className="flex items-center justify-between text-[#7A7375]">
-            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9]">Active Offers</span>
+            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9] group-hover:text-[#E9C9CE] transition-colors">
+              Active Offers & Deals
+            </span>
             <Tag className="w-4 h-4 text-[#E9C9CE]" />
           </div>
           <div className="text-2xl font-serif text-[#FFFFFF]">{offersCount || 6} Bundles</div>
-          <div className="text-[11px] text-[#C58C97] font-light">Bridal, Party & Makeup Suites</div>
-        </div>
-
-        <div className="p-5 bg-[#141213] border border-[#242022] rounded-lg space-y-3">
-          <div className="flex items-center justify-between text-[#7A7375]">
-            <span className="text-[11px] uppercase tracking-wider font-medium text-[#B0A7A9]">VIP Customers</span>
-            <Users className="w-4 h-4 text-[#E9C9CE]" />
-          </div>
-          <div className="text-2xl font-serif text-[#FFFFFF]">1,420 Clients</div>
-          <div className="text-[11px] text-emerald-400 font-medium">+124 new this week</div>
-        </div>
+          <div className="text-[11px] text-[#C58C97] font-light">Bridal, Party & Suites</div>
+        </Link>
       </div>
 
       {/* Interactive Charts Section: Revenue Curve + Product Distribution */}
@@ -164,7 +228,6 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          {/* Custom SVG Line Chart */}
           <div className="h-60 w-full relative flex flex-col justify-end">
             <svg className="w-full h-48 overflow-visible" viewBox="0 0 500 150">
               <defs>
@@ -174,19 +237,16 @@ export default function AdminDashboardPage() {
                 </linearGradient>
               </defs>
 
-              {/* Grid lines */}
               <line x1="0" y1="0" x2="500" y2="0" stroke="#242022" strokeDasharray="3 3" />
               <line x1="0" y1="50" x2="500" y2="50" stroke="#242022" strokeDasharray="3 3" />
               <line x1="0" y1="100" x2="500" y2="100" stroke="#242022" strokeDasharray="3 3" />
               <line x1="0" y1="150" x2="500" y2="150" stroke="#242022" />
 
-              {/* Area fill */}
               <path
                 d="M 0 110 C 80 80, 160 50, 240 70 C 320 90, 400 30, 500 10 L 500 150 L 0 150 Z"
                 fill="url(#salesGrad)"
               />
 
-              {/* Smooth curve line */}
               <path
                 d="M 0 110 C 80 80, 160 50, 240 70 C 320 90, 400 30, 500 10"
                 fill="none"
@@ -194,7 +254,6 @@ export default function AdminDashboardPage() {
                 strokeWidth="3"
               />
 
-              {/* Glowing data points */}
               <circle cx="0" cy="110" r="4" fill="#E9C9CE" />
               <circle cx="100" cy="85" r="4" fill="#E9C9CE" />
               <circle cx="200" cy="60" r="4" fill="#E9C9CE" />
@@ -205,7 +264,7 @@ export default function AdminDashboardPage() {
 
             <div className="flex justify-between text-[11px] text-[#7A7375] font-mono mt-4 pt-2 border-t border-[#242022]">
               {salesData.map((d) => (
-                <span key={d.month}>{d.month} (${(d.sales / 1000).toFixed(1)}k)</span>
+                <span key={d.month}>{d.month} (₨ {(d.sales / 1000).toFixed(1)}k)</span>
               ))}
             </div>
           </div>
@@ -247,29 +306,34 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Recent Orders Table */}
-      <div className="bg-[#141213] border border-[#242022] rounded-lg p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Recent Orders Section with Dedicated Details Button */}
+      <div className="bg-[#141213] border border-[#242022] rounded-lg p-6 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242022] pb-4">
           <div>
-            <h3 className="font-serif text-lg text-[#FFFFFF]">Recent Client Orders</h3>
-            <p className="text-xs text-[#7A7375]">Real-time checkout requests</p>
+            <h3 className="font-serif text-xl text-[#FFFFFF]">Recent Client Orders</h3>
+            <p className="text-xs text-[#7A7375]">Real-time incoming orders from customer checkout</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <select
               value={dashboardFilter}
               onChange={(e) => setDashboardFilter(e.target.value)}
-              className="bg-[#1A1718] border border-[#2B2527] focus:border-[#6B7C52] text-xs text-[#FCFAF9] py-1.5 px-3 rounded focus:outline-none"
+              className="bg-[#1A1718] border border-[#2B2527] focus:border-[#E9C9CE] text-xs text-[#FCFAF9] py-1.5 px-3 rounded focus:outline-none"
             >
               <option value="All">All Statuses</option>
               <option value="Pending">Pending</option>
               <option value="Processing">Processing</option>
+              <option value="Dispatched">Dispatched</option>
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
             </select>
 
-            <Link href="/admin/orders" className="text-xs text-[#D0D9C0] hover:text-[#FFFFFF] hover:underline font-medium">
-              View All Orders
+            <Link
+              href="/admin/orders"
+              className="px-3.5 py-1.5 bg-[#1A1718] border border-[#3A3134] hover:border-[#E9C9CE] text-xs text-[#E9C9CE] hover:text-[#FFFFFF] rounded font-medium transition-colors flex items-center gap-1.5"
+            >
+              <span>Open Orders Tab</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -279,42 +343,172 @@ export default function AdminDashboardPage() {
             <thead className="bg-[#1A1718] text-[10px] uppercase tracking-wider text-[#7A7375] font-mono border-b border-[#242022]">
               <tr>
                 <th className="p-3">Order ID</th>
-                <th className="p-3">Customer</th>
+                <th className="p-3">Customer & City</th>
                 <th className="p-3">Purchased Items</th>
                 <th className="p-3">Total Amount</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Date</th>
+                <th className="p-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#242022]">
               {recentOrders
                 .filter((ord) => dashboardFilter === 'All' || ord.status === dashboardFilter)
-                .map((ord) => (
-                <tr key={ord.id} className="hover:bg-[#1A1718]/50 transition-colors">
-                  <td className="p-3 font-mono text-[#E9C9CE]">{ord.id}</td>
-                  <td className="p-3 font-medium text-[#F3ECEB]">{ord.customer}</td>
-                  <td className="p-3 text-[#A8A19F] max-w-xs truncate">{ord.items}</td>
-                  <td className="p-3 font-mono text-[#FFFFFF]">{ord.total}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] tracking-wide font-mono uppercase ${
-                        ord.status === 'Delivered'
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                          : ord.status === 'Shipped'
-                          ? 'bg-sky-950 text-sky-300 border border-sky-800'
-                          : 'bg-amber-950 text-amber-300 border border-amber-800'
-                      }`}
-                    >
-                      {ord.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-[#7A7375]">{ord.date}</td>
-                </tr>
-              ))}
+                .map((ord) => {
+                  const city = ord.shippingAddress?.city || 'Pakistan';
+                  const itemsSummary = (ord.items || [])
+                    .map((i: any) => `${i.productName || i.name} (×${i.quantity || 1})`)
+                    .join(', ');
+
+                  return (
+                    <tr key={ord.id} className="hover:bg-[#1A1718]/60 transition-colors">
+                      <td className="p-3 font-mono text-[#E9C9CE] font-bold">{ord.id}</td>
+                      <td className="p-3">
+                        <div className="font-medium text-[#F3ECEB]">{ord.customerName}</div>
+                        <div className="text-[10px] text-[#7A7375] font-mono">{city}</div>
+                      </td>
+                      <td className="p-3 text-[#A8A19F] max-w-xs truncate">{itemsSummary}</td>
+                      <td className="p-3 font-mono text-[#FFFFFF] font-bold">
+                        ₨ {(ord.totalPKR || 0).toLocaleString()}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] tracking-wide font-mono uppercase border ${getStatusBadge(
+                            ord.status || 'Pending'
+                          )}`}
+                        >
+                          {ord.status || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-[#7A7375]">
+                        {new Date(ord.createdAt || Date.now()).toLocaleDateString()}
+                      </td>
+                      <td className="p-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setSelectedOrder(ord)}
+                          className="px-3 py-1.5 bg-[#E9C9CE] text-[#171515] hover:bg-[#F3D7DC] rounded text-xs font-semibold inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Details</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* QUICK VIEW DETAILS MODAL */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#141213] border border-[#242022] rounded-xl w-full max-w-xl p-6 space-y-5 my-8 shadow-2xl relative text-xs animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-[#242022] pb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-base text-[#E9C9CE] font-bold">{selectedOrder.id}</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase border ${getStatusBadge(
+                    selectedOrder.status
+                  )}`}
+                >
+                  {selectedOrder.status}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="text-[#7A7375] hover:text-[#FFFFFF] p-1 rounded hover:bg-[#1A1718]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Customer Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-[#1A1718] p-3.5 rounded border border-[#2B2527] space-y-1.5">
+                <span className="text-[10px] uppercase font-mono text-[#E9C9CE] block font-semibold">
+                  Customer Profile
+                </span>
+                <div className="font-medium text-sm text-[#FFFFFF]">{selectedOrder.customerName}</div>
+                <div className="text-[11px] text-[#A8A19F] font-mono flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-[#7A7375]" />
+                  <span>{selectedOrder.customerPhone}</span>
+                </div>
+                <div className="text-[11px] text-[#7A7375] flex items-center gap-1">
+                  <Mail className="w-3 h-3 text-[#7A7375]" />
+                  <span>{selectedOrder.customerEmail}</span>
+                </div>
+              </div>
+
+              <div className="bg-[#1A1718] p-3.5 rounded border border-[#2B2527] space-y-1.5">
+                <span className="text-[10px] uppercase font-mono text-[#E9C9CE] block font-semibold">
+                  Delivery Address
+                </span>
+                <p className="font-medium text-xs text-[#FFFFFF]">{selectedOrder.shippingAddress?.street}</p>
+                <p className="text-[11px] text-[#A8A19F]">
+                  {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.province}
+                </p>
+                {selectedOrder.shippingAddress?.deliveryNotes && (
+                  <p className="text-[10px] text-[#C58C97] italic mt-1">
+                    Note: {selectedOrder.shippingAddress.deliveryNotes}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Purchased Items */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] uppercase font-mono text-[#7A7375] font-semibold block">
+                Purchased Items ({selectedOrder.items?.length || 0})
+              </span>
+              <div className="bg-[#1A1718] p-3 rounded border border-[#2B2527] space-y-1.5 divide-y divide-[#2B2527]">
+                {(selectedOrder.items || []).map((it: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between pt-1.5 first:pt-0">
+                    <span className="text-[#FFFFFF]">
+                      {it.productName || it.name} × {it.quantity || 1}
+                    </span>
+                    <span className="font-mono text-[#E9C9CE]">
+                      ₨ {((it.pricePKR || it.price || 0) * (it.quantity || 1)).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment & Total */}
+            <div className="bg-[#1A1718] p-3.5 rounded border border-[#2B2527] flex items-center justify-between font-mono">
+              <div>
+                <span className="text-[10px] uppercase text-[#7A7375] block">Payment Mode</span>
+                <span className="text-xs text-[#FFFFFF] font-sans font-medium">{selectedOrder.paymentMethod}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase text-[#7A7375] block">Total Amount</span>
+                <span className="text-base text-[#E9C9CE] font-bold">
+                  ₨ {(selectedOrder.totalPKR || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-[#242022]">
+              <Link
+                href={`/admin/orders?id=${selectedOrder.id}`}
+                className="text-xs text-[#E9C9CE] hover:underline flex items-center gap-1 font-medium"
+              >
+                <span>Open Full Management in Orders Tab</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="px-4 py-2 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-semibold text-xs rounded transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,26 +15,60 @@ import {
   Sparkles,
   ExternalLink,
   Image as ImageIcon,
-  Layers
+  Layers,
+  FolderPlus,
+  Tag,
+  Palette,
+  Maximize2
 } from 'lucide-react';
-import { Product, MainCategory, SubCategory, Audience } from '@/lib/types';
-import { getStoredProducts, saveProductToStore, deleteProductFromStore } from '@/lib/adminStore';
+import { Product, MainCategory, SubCategory, Audience, Category } from '@/lib/types';
+import {
+  getStoredProducts,
+  saveProductToStore,
+  deleteProductFromStore,
+  getStoredCategories,
+  addCustomMainCategory,
+  addCustomSubcategory,
+  deleteCategoryFromStore
+} from '@/lib/adminStore';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMainCat, setSelectedMainCat] = useState<string>('all');
   const [selectedSubCat, setSelectedSubCat] = useState<string>('all');
+  
+  // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categoryModalTab, setCategoryModalTab] = useState<'main' | 'sub'>('main');
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Form State with Multi-Image Support (2 to 3+ images)
+  // New Main Category Form State
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatSlug, setNewCatSlug] = useState('');
+  const [newCatTagline, setNewCatTagline] = useState('');
+  const [newCatDescription, setNewCatDescription] = useState('');
+  const [newCatHeroImage, setNewCatHeroImage] = useState('');
+
+  // New Subcategory Form State
+  const [targetParentSlug, setTargetParentSlug] = useState('beauty');
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubSlug, setNewSubSlug] = useState('');
+  const [newSubDescription, setNewSubDescription] = useState('');
+  const [newSubImage, setNewSubImage] = useState('');
+
+  // Form State with Multi-Image Support & Brand / Color / Size
   const [formData, setFormData] = useState<{
     id?: string;
     productCode: string;
     name: string;
     subtitle: string;
     description: string;
+    brand: string;
+    colors: string;
+    sizes: string;
     price: string;
     originalPrice: string;
     discount: string;
@@ -49,6 +83,9 @@ export default function AdminProductsPage() {
     name: '',
     subtitle: '',
     description: '',
+    brand: 'ELEGANTSTYLE',
+    colors: 'Rose Gold, Velvet Crimson, Noir',
+    sizes: '30ml, 50ml, 100ml',
     price: '',
     originalPrice: '',
     discount: '',
@@ -67,7 +104,15 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     setProducts(getStoredProducts());
+    setCategories(getStoredCategories());
   }, []);
+
+  // Update targetParentSlug default when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !targetParentSlug) {
+      setTargetParentSlug(categories[0].slug);
+    }
+  }, [categories, targetParentSlug]);
 
   const handleOpenModal = (prod?: Product) => {
     if (prod) {
@@ -77,6 +122,9 @@ export default function AdminProductsPage() {
         name: prod.name,
         subtitle: prod.subtitle || '',
         description: prod.description || '',
+        brand: prod.brand || 'ELEGANTSTYLE',
+        colors: prod.colors?.join(', ') || '',
+        sizes: prod.sizes?.join(', ') || '',
         price: prod.price.toString(),
         originalPrice: prod.originalPrice ? prod.originalPrice.toString() : '',
         discount: prod.discount ? prod.discount.toString() : (prod.originalPrice && prod.originalPrice > prod.price ? Math.round(((prod.originalPrice - prod.price) / prod.originalPrice) * 100).toString() : ''),
@@ -89,16 +137,22 @@ export default function AdminProductsPage() {
       });
     } else {
       const generatedCode = `ELG-${Math.floor(1000 + Math.random() * 9000)}`;
+      const firstCat = categories[0]?.slug || 'beauty';
+      const firstSub = categories[0]?.subcategories?.[0]?.slug || 'makeup';
+
       setFormData({
         productCode: generatedCode,
         name: '',
         subtitle: '',
         description: '',
+        brand: 'ELEGANTSTYLE',
+        colors: 'Rose Gold, Velvet Crimson, Noir',
+        sizes: '30ml, 50ml, 100ml',
         price: '',
         originalPrice: '',
         discount: '15',
-        mainCategory: 'beauty',
-        subcategory: 'makeup',
+        mainCategory: firstCat,
+        subcategory: firstSub,
         audience: ['women'],
         badge: 'NEW',
         images: [
@@ -123,6 +177,16 @@ export default function AdminProductsPage() {
     const parsedOriginal = formData.originalPrice ? parseFloat(formData.originalPrice) : undefined;
     const parsedDiscount = formData.discount ? parseFloat(formData.discount) : undefined;
 
+    const parsedColors = formData.colors
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    const parsedSizes = formData.sizes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     const newProd: Product = {
       id: formData.id || `prod-${Date.now()}`,
       productCode: formData.productCode || `ELG-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -130,6 +194,9 @@ export default function AdminProductsPage() {
       name: formData.name,
       subtitle: formData.subtitle || 'Luxury Curation',
       description: formData.description || 'High art luxury creation.',
+      brand: formData.brand.trim() || 'ELEGANTSTYLE',
+      colors: parsedColors.length > 0 ? parsedColors : undefined,
+      sizes: parsedSizes.length > 0 ? parsedSizes : undefined,
       price: parsedPrice,
       originalPrice: parsedOriginal,
       discount: parsedDiscount,
@@ -148,12 +215,91 @@ export default function AdminProductsPage() {
     const updated = saveProductToStore(newProd);
     setProducts(updated);
     setIsModalOpen(false);
+
+    // Sync to server-side JSON storage and dispatch cross-component refresh
+    try {
+      fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProd),
+      }).catch((err) => console.error('Server product sync notice:', err));
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('storage'));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
       const updated = deleteProductFromStore(id);
       setProducts(updated);
+
+      try {
+        fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' }).catch((err) =>
+          console.error('Server product delete notice:', err)
+        );
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // Custom Category creation
+  const handleCreateMainCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+
+    const updated = addCustomMainCategory({
+      name: newCatName.trim(),
+      slug: newCatSlug.trim() || undefined,
+      tagline: newCatTagline.trim() || undefined,
+      description: newCatDescription.trim() || undefined,
+      heroImage: newCatHeroImage.trim() || undefined,
+    });
+
+    setCategories(updated);
+    setNewCatName('');
+    setNewCatSlug('');
+    setNewCatTagline('');
+    setNewCatDescription('');
+    setNewCatHeroImage('');
+    alert(`Main Category "${newCatName.trim()}" created successfully! It is now live in store.`);
+  };
+
+  // Custom Subcategory creation
+  const handleCreateSubcategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubName.trim()) return;
+
+    const updated = addCustomSubcategory(targetParentSlug, {
+      name: newSubName.trim(),
+      slug: newSubSlug.trim() || undefined,
+      description: newSubDescription.trim() || undefined,
+      image: newSubImage.trim() || undefined,
+    });
+
+    setCategories(updated);
+    setNewSubName('');
+    setNewSubSlug('');
+    setNewSubDescription('');
+    setNewSubImage('');
+    alert(`Subcategory "${newSubName.trim()}" created under ${targetParentSlug} successfully!`);
+  };
+
+  const handleDeleteCategory = (catSlug: string) => {
+    if (['beauty', 'fashion'].includes(catSlug)) {
+      alert('Core built-in categories cannot be deleted.');
+      return;
+    }
+    if (confirm(`Are you sure you want to delete category "${catSlug}"?`)) {
+      const updated = deleteCategoryFromStore(catSlug);
+      setCategories(updated);
     }
   };
 
@@ -163,7 +309,6 @@ export default function AdminProductsPage() {
     if (!file) return;
 
     setUploadingImage(true);
-    // Upload image to Cloudinary (cloud_name: oubqtfbl)
     setTimeout(() => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -195,8 +340,15 @@ export default function AdminProductsPage() {
     }));
   };
 
+  // Get dynamic subcategories for current main category in form
+  const currentCategoryObj = categories.find((c) => c.slug === formData.mainCategory);
+  const availableSubcategories = currentCategoryObj?.subcategories || [];
+
   const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesMain = selectedMainCat === 'all' || p.mainCategory === selectedMainCat;
     const matchesSub = selectedSubCat === 'all' || p.subcategory === selectedSubCat;
     return matchesSearch && matchesMain && matchesSub;
@@ -204,26 +356,37 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Top Title Bar */}
+      {/* Top Title Bar & Category Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#242022] pb-6">
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded bg-[#262123] text-[#E9C9CE] text-[10px] uppercase tracking-widest font-mono mb-1">
             <Package className="w-3 h-3 text-[#E9C9CE]" />
-            <span>Catalog Management</span>
+            <span>Catalog & Inventory Management</span>
           </div>
-          <h1 className="font-serif text-2xl text-[#FFFFFF]">Products & Inventory</h1>
+          <h1 className="font-serif text-2xl text-[#FFFFFF]">Products & Categories</h1>
           <p className="text-xs text-[#7A7375]">
-            Add & manage products with multi-image Cloudinary upload (2 to 3 images per item).
+            Add & manage products with multi-image upload, Brand, Color, Size, and custom Categories/Subcategories.
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-medium text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2 cursor-pointer shadow-lg shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Product</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="px-4 py-2.5 bg-[#1F1B1D] border border-[#3A2E32] hover:border-[#E9C9CE] text-[#E9C9CE] font-medium text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2 cursor-pointer shadow-md"
+            title="Create and manage custom Main Categories and Subcategories"
+          >
+            <Layers className="w-4 h-4 text-[#E9C9CE]" />
+            <span>Manage / Add Categories</span>
+          </button>
+
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2.5 bg-[#E9C9CE] hover:bg-[#F3D7DC] text-[#171515] font-semibold text-xs tracking-wider uppercase rounded transition-all flex items-center gap-2 cursor-pointer shadow-lg shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Product</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -234,7 +397,7 @@ export default function AdminProductsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by product name or subcategory..."
+            placeholder="Search by product name, brand, subcategory..."
             className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] placeholder-[#6B6466] pl-9 pr-4 py-2 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           />
         </div>
@@ -245,9 +408,12 @@ export default function AdminProductsPage() {
             onChange={(e) => setSelectedMainCat(e.target.value)}
             className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           >
-            <option value="all">All Main Categories</option>
-            <option value="beauty">Beauty & Cosmetics</option>
-            <option value="fashion">Fashion & Style</option>
+            <option value="all">All Main Categories ({categories.length})</option>
+            {categories.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -258,29 +424,28 @@ export default function AdminProductsPage() {
             className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           >
             <option value="all">All Subcategories</option>
-            <option value="makeup">Makeup</option>
-            <option value="skin-care">Skin Care</option>
-            <option value="hair-care">Hair Care</option>
-            <option value="belts">Belts</option>
-            <option value="wallets">Wallets</option>
-            <option value="hand-bags">Hand Bags</option>
-            <option value="school-belts">School Belts</option>
-            <option value="deals">Deals</option>
+            {categories.flatMap((c) =>
+              c.subcategories.map((s) => (
+                <option key={`${c.slug}-${s.slug}`} value={s.slug}>
+                  {c.name} → {s.name}
+                </option>
+              ))
+            )}
           </select>
         </div>
       </div>
 
       {/* Products Table */}
-      <div className="bg-[#141213] border border-[#242022] rounded-lg overflow-hidden">
+      <div className="bg-[#141213] border border-[#242022] rounded-lg overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-[#B0A7A9]">
             <thead className="bg-[#1A1718] text-[10px] uppercase tracking-wider text-[#7A7375] font-mono border-b border-[#242022]">
               <tr>
                 <th className="p-3.5">Images (2-3)</th>
-                <th className="p-3.5">Code / SKU</th>
-                <th className="p-3.5">Product Name</th>
+                <th className="p-3.5">Product Details & Brand</th>
                 <th className="p-3.5">Category</th>
                 <th className="p-3.5">Subcategory</th>
+                <th className="p-3.5">Colors & Sizes</th>
                 <th className="p-3.5">Price</th>
                 <th className="p-3.5">Discount</th>
                 <th className="p-3.5">Badge</th>
@@ -289,108 +454,474 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#242022]">
-              {filteredProducts.map((prod) => (
-                <tr key={prod.id} className="hover:bg-[#1A1718]/60 transition-colors">
-                  <td className="p-3.5">
-                    <div className="flex items-center gap-1.5">
-                      {prod.images.slice(0, 3).map((img, idx) => (
-                        <div key={idx} className="w-9 h-9 bg-[#262123] rounded border border-[#3A3134] overflow-hidden relative">
-                          <img
-                            src={img}
-                            alt={`${prod.name} ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                      {prod.images.length > 3 && (
-                        <span className="text-[10px] font-mono text-[#D0D9C0]">+{prod.images.length - 3}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3.5 font-mono text-[11px] text-[#D0D9C0] font-medium">
-                    {prod.productCode || `ELG-${prod.id.slice(-4).toUpperCase()}`}
-                  </td>
-                  <td className="p-3.5">
-                    <div className="font-serif text-sm text-[#FFFFFF] font-medium">{prod.name}</div>
-                    <div className="text-[10px] text-[#7A7375] font-mono">{prod.slug}</div>
-                  </td>
-                  <td className="p-3.5 capitalize font-mono text-[#D0D9C0]">{prod.mainCategory}</td>
-                  <td className="p-3.5 capitalize font-mono text-[#A8A19F]">{prod.subcategory}</td>
-                  <td className="p-3.5 font-mono text-[#FFFFFF]">${prod.price.toFixed(2)}</td>
-                  <td className="p-3.5 font-mono text-[11px]">
-                    {prod.discount ? (
-                      <span className="px-2 py-0.5 bg-[#6B7C52]/20 text-[#D0D9C0] border border-[#6B7C52]/40 rounded font-semibold">
-                        {prod.discount}% OFF
-                      </span>
-                    ) : prod.originalPrice && prod.originalPrice > prod.price ? (
-                      <span className="px-2 py-0.5 bg-[#6B7C52]/20 text-[#D0D9C0] border border-[#6B7C52]/40 rounded font-semibold">
-                        {Math.round(((prod.originalPrice - prod.price) / prod.originalPrice) * 100)}% OFF
-                      </span>
-                    ) : (
-                      <span className="text-[#6B6466] text-[10px]">—</span>
-                    )}
-                  </td>
-                  <td className="p-3.5">
-                    {prod.badge ? (
-                      <span className="px-2 py-0.5 bg-[#C58C97]/20 text-[#E9C9CE] border border-[#C58C97]/40 text-[9px] rounded uppercase font-mono">
-                        {prod.badge}
-                      </span>
-                    ) : (
-                      <span className="text-[#6B6466] text-[10px]">—</span>
-                    )}
-                  </td>
-                  <td className="p-3.5">
-                    <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] rounded border border-emerald-800 font-mono">
-                      In Stock
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleOpenModal(prod)}
-                        className="p-1.5 text-[#B0A7A9] hover:text-[#E9C9CE] hover:bg-[#262123] rounded transition-colors"
-                        title="Edit product"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(prod.id)}
-                        className="p-1.5 text-[#E87373] hover:bg-[#2E181A] rounded transition-colors"
-                        title="Delete product"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="p-8 text-center text-xs text-[#7A7375]">
+                    No products found matching filters.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredProducts.map((prod) => (
+                  <tr key={prod.id} className="hover:bg-[#1A1718]/60 transition-colors">
+                    {/* Images */}
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-1.5">
+                        {prod.images.slice(0, 3).map((img, idx) => (
+                          <div key={idx} className="w-9 h-9 bg-[#262123] rounded border border-[#3A3134] overflow-hidden relative">
+                            <img
+                              src={img}
+                              alt={`${prod.name} ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                        {prod.images.length > 3 && (
+                          <span className="text-[10px] font-mono text-[#E9C9CE]">+{prod.images.length - 3}</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Product Name, SKU & Brand */}
+                    <td className="p-3.5">
+                      <div className="font-serif text-sm text-[#FFFFFF] font-medium">{prod.name}</div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="font-mono text-[10px] text-[#E9C9CE] bg-[#262123] px-1.5 py-0.5 rounded border border-[#3A3134]">
+                          {prod.brand || 'ELEGANTSTYLE'}
+                        </span>
+                        <span className="text-[10px] text-[#7A7375] font-mono">
+                          {prod.productCode || `ELG-${prod.id.slice(-4).toUpperCase()}`}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Main Category */}
+                    <td className="p-3.5 capitalize font-mono text-[#E9C9CE]">
+                      {categories.find((c) => c.slug === prod.mainCategory)?.name || prod.mainCategory}
+                    </td>
+
+                    {/* Subcategory */}
+                    <td className="p-3.5 capitalize font-mono text-[#A8A19F]">
+                      {prod.subcategory}
+                    </td>
+
+                    {/* Colors & Sizes Chips */}
+                    <td className="p-3.5 max-w-xs">
+                      <div className="space-y-1">
+                        {prod.colors && prod.colors.length > 0 ? (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-[9px] text-[#7A7375] uppercase font-mono">Colors:</span>
+                            {prod.colors.slice(0, 3).map((c, i) => (
+                              <span key={i} className="px-1.5 py-0.5 bg-[#262123] border border-[#3A3134] text-[9px] rounded text-[#D4CDCE]">
+                                {c}
+                              </span>
+                            ))}
+                            {prod.colors.length > 3 && <span className="text-[9px] text-[#7A7375]">+{prod.colors.length - 3}</span>}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#555] italic">Default Palette</span>
+                        )}
+
+                        {prod.sizes && prod.sizes.length > 0 ? (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-[9px] text-[#7A7375] uppercase font-mono">Sizes:</span>
+                            {prod.sizes.slice(0, 3).map((s, i) => (
+                              <span key={i} className="px-1.5 py-0.5 bg-[#1F1B1D] border border-[#3A2E32] text-[9px] rounded text-[#E9C9CE]">
+                                {s}
+                              </span>
+                            ))}
+                            {prod.sizes.length > 3 && <span className="text-[9px] text-[#7A7375]">+{prod.sizes.length - 3}</span>}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#555] italic">Standard Dimension</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Price */}
+                    <td className="p-3.5 font-mono text-[#FFFFFF]">${prod.price.toFixed(2)}</td>
+
+                    {/* Discount */}
+                    <td className="p-3.5 font-mono text-[11px]">
+                      {prod.discount ? (
+                        <span className="px-2 py-0.5 bg-[#6B7C52]/20 text-[#D0D9C0] border border-[#6B7C52]/40 rounded font-semibold">
+                          {prod.discount}% OFF
+                        </span>
+                      ) : prod.originalPrice && prod.originalPrice > prod.price ? (
+                        <span className="px-2 py-0.5 bg-[#6B7C52]/20 text-[#D0D9C0] border border-[#6B7C52]/40 rounded font-semibold">
+                          {Math.round(((prod.originalPrice - prod.price) / prod.originalPrice) * 100)}% OFF
+                        </span>
+                      ) : (
+                        <span className="text-[#6B6466] text-[10px]">—</span>
+                      )}
+                    </td>
+
+                    {/* Badge */}
+                    <td className="p-3.5">
+                      {prod.badge ? (
+                        <span className="px-2 py-0.5 bg-[#C58C97]/20 text-[#E9C9CE] border border-[#C58C97]/40 text-[9px] rounded uppercase font-mono">
+                          {prod.badge}
+                        </span>
+                      ) : (
+                        <span className="text-[#6B6466] text-[10px]">—</span>
+                      )}
+                    </td>
+
+                    {/* Stock */}
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] rounded border border-emerald-800 font-mono">
+                        In Stock
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="p-3.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenModal(prod)}
+                          className="p-1.5 text-[#B0A7A9] hover:text-[#E9C9CE] hover:bg-[#262123] rounded transition-colors cursor-pointer"
+                          title="Edit product"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(prod.id)}
+                          className="p-1.5 text-[#E87373] hover:bg-[#2E181A] rounded transition-colors cursor-pointer"
+                          title="Delete product"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Add / Edit Product Modal (Multi-Image Upload 2-3 images) */}
+      {/* CATEGORY & SUBCATEGORY MANAGEMENT MODAL */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#141213] border border-[#242022] rounded-lg w-full max-w-3xl p-6 space-y-6 my-8 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-[#242022] pb-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-[#E9C9CE]" />
+                <h3 className="font-serif text-xl text-[#FFFFFF]">Manage Categories & Subcategories</h3>
+              </div>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Tabs switcher */}
+            <div className="flex border-b border-[#242022] gap-4 text-xs font-mono uppercase tracking-wider">
+              <button
+                type="button"
+                onClick={() => setCategoryModalTab('main')}
+                className={`pb-3 px-1 transition-colors border-b-2 font-medium flex items-center gap-2 ${
+                  categoryModalTab === 'main'
+                    ? 'border-[#E9C9CE] text-[#E9C9CE]'
+                    : 'border-transparent text-[#7A7375] hover:text-[#FCFAF9]'
+                }`}
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>Add / Manage Main Categories ({categories.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCategoryModalTab('sub')}
+                className={`pb-3 px-1 transition-colors border-b-2 font-medium flex items-center gap-2 ${
+                  categoryModalTab === 'sub'
+                    ? 'border-[#E9C9CE] text-[#E9C9CE]'
+                    : 'border-transparent text-[#7A7375] hover:text-[#FCFAF9]'
+                }`}
+              >
+                <Tag className="w-4 h-4" />
+                <span>Add / Manage Subcategories</span>
+              </button>
+            </div>
+
+            {/* TAB 1: MAIN CATEGORIES */}
+            {categoryModalTab === 'main' && (
+              <div className="space-y-6">
+                {/* Form to add Main Category */}
+                <form onSubmit={handleCreateMainCategory} className="bg-[#1A1718] p-4 rounded-lg border border-[#2B2527] space-y-4">
+                  <div className="text-xs uppercase font-mono text-[#E9C9CE] tracking-wider font-semibold">
+                    + Create New Custom Main Category
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Category Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newCatName}
+                        onChange={(e) => {
+                          setNewCatName(e.target.value);
+                          if (!newCatSlug) {
+                            setNewCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                          }
+                        }}
+                        placeholder="e.g. Fragrances, Watches, Jewelry"
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Slug / Route (Optional)</label>
+                      <input
+                        type="text"
+                        value={newCatSlug}
+                        onChange={(e) => setNewCatSlug(e.target.value)}
+                        placeholder="e.g. fragrances"
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Tagline</label>
+                      <input
+                        type="text"
+                        value={newCatTagline}
+                        onChange={(e) => setNewCatTagline(e.target.value)}
+                        placeholder="e.g. Haute Parfumerie & Pure Botanical Essences"
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Hero Banner Image URL</label>
+                      <input
+                        type="url"
+                        value={newCatHeroImage}
+                        onChange={(e) => setNewCatHeroImage(e.target.value)}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <label className="text-[#B0A7A9]">Description</label>
+                    <textarea
+                      rows={2}
+                      value={newCatDescription}
+                      onChange={(e) => setNewCatDescription(e.target.value)}
+                      placeholder="Atmospheric luxury collection description displayed in the category header..."
+                      className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2 rounded focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="text-right">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#E9C9CE] text-[#171515] font-semibold text-xs rounded hover:bg-[#F3D7DC] transition-colors cursor-pointer"
+                    >
+                      Save & Publish Main Category
+                    </button>
+                  </div>
+                </form>
+
+                {/* Existing Main Categories List */}
+                <div className="space-y-2">
+                  <div className="text-[10px] uppercase tracking-wider text-[#7A7375] font-mono">
+                    Live Active Main Categories
+                  </div>
+                  <div className="divide-y divide-[#242022] border border-[#242022] rounded-lg overflow-hidden bg-[#1A1718]">
+                    {categories.map((c) => (
+                      <div key={c.slug} className="p-3.5 flex items-center justify-between gap-4">
+                        <div>
+                          <div className="font-serif text-sm text-[#FFFFFF] flex items-center gap-2">
+                            <span>{c.name}</span>
+                            <span className="font-mono text-[10px] text-[#E9C9CE] bg-[#262123] px-2 py-0.5 rounded">
+                              /{c.slug}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#A8A19F] mt-0.5 line-clamp-1">{c.tagline || c.description}</p>
+                          <div className="text-[10px] text-[#7A7375] font-mono mt-1">
+                            {c.subcategories.length} Subcategories: {c.subcategories.map((s) => s.name).join(', ') || 'None'}
+                          </div>
+                        </div>
+
+                        <div>
+                          {['beauty', 'fashion'].includes(c.slug) ? (
+                            <span className="px-2 py-1 bg-[#262123] text-[#7A7375] rounded text-[10px] font-mono uppercase">
+                              Core
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(c.slug)}
+                              className="p-1.5 bg-[#2E181A] text-red-400 hover:bg-red-900 rounded transition-colors text-xs flex items-center gap-1 cursor-pointer"
+                              title="Delete custom category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: SUBCATEGORIES */}
+            {categoryModalTab === 'sub' && (
+              <div className="space-y-6">
+                {/* Form to add Subcategory */}
+                <form onSubmit={handleCreateSubcategory} className="bg-[#1A1718] p-4 rounded-lg border border-[#2B2527] space-y-4">
+                  <div className="text-xs uppercase font-mono text-[#E9C9CE] tracking-wider font-semibold">
+                    + Add New Subcategory Under a Main Category
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Select Parent Category *</label>
+                      <select
+                        value={targetParentSlug}
+                        onChange={(e) => setTargetParentSlug(e.target.value)}
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      >
+                        {categories.map((c) => (
+                          <option key={c.slug} value={c.slug}>
+                            {c.name} (/{c.slug})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Subcategory Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newSubName}
+                        onChange={(e) => {
+                          setNewSubName(e.target.value);
+                          if (!newSubSlug) {
+                            setNewSubSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                          }
+                        }}
+                        placeholder="e.g. Eau de Parfum, Necklaces, Silk Ties"
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Subcategory Slug (Optional)</label>
+                      <input
+                        type="text"
+                        value={newSubSlug}
+                        onChange={(e) => setNewSubSlug(e.target.value)}
+                        placeholder="e.g. eau-de-parfum"
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[#B0A7A9]">Image URL</label>
+                      <input
+                        type="url"
+                        value={newSubImage}
+                        onChange={(e) => setNewSubImage(e.target.value)}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <label className="text-[#B0A7A9]">Subcategory Description</label>
+                    <textarea
+                      rows={2}
+                      value={newSubDescription}
+                      onChange={(e) => setNewSubDescription(e.target.value)}
+                      placeholder="Brief description of this collection..."
+                      className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2 rounded focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="text-right">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#E9C9CE] text-[#171515] font-semibold text-xs rounded hover:bg-[#F3D7DC] transition-colors cursor-pointer"
+                    >
+                      Save & Add Subcategory
+                    </button>
+                  </div>
+                </form>
+
+                {/* Subcategories list by parent */}
+                <div className="space-y-4">
+                  {categories.map((cat) => (
+                    <div key={cat.slug} className="bg-[#1A1718] border border-[#2B2527] rounded-lg p-4 space-y-2">
+                      <div className="font-serif text-sm text-[#FFFFFF] font-medium flex items-center justify-between border-b border-[#242022] pb-2">
+                        <span>{cat.name} Subcategories</span>
+                        <span className="text-[10px] font-mono text-[#E9C9CE]">{cat.subcategories.length} entries</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                        {cat.subcategories.map((sub) => (
+                          <div key={sub.slug} className="p-2 bg-[#141213] rounded border border-[#2B2527] text-xs">
+                            <div className="font-medium text-[#FCFAF9]">{sub.name}</div>
+                            <div className="text-[10px] text-[#7A7375] font-mono">/{sub.slug}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="text-right border-t border-[#242022] pt-4">
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="px-4 py-2 bg-[#262123] text-[#FCFAF9] text-xs rounded hover:bg-[#332B2E] transition-colors cursor-pointer"
+              >
+                Close Manager
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT PRODUCT MODAL (with Multi-Image, Brand, Color, Size & Dynamic Categories) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#141213] border border-[#242022] rounded-lg w-full max-w-2xl p-6 space-y-5 my-8 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-[#242022] pb-4">
-              <h3 className="font-serif text-lg text-[#FFFFFF]">
-                {formData.id ? 'Edit Product Details' : 'Add New Product to Catalog'}
-              </h3>
+              <div>
+                <h3 className="font-serif text-lg text-[#FFFFFF]">
+                  {formData.id ? 'Edit Product Details' : 'Add New Product to Catalog'}
+                </h3>
+                <p className="text-[11px] text-[#7A7375] mt-0.5">
+                  Configure title, brand, colors, sizes, dynamic category, and multi-image gallery.
+                </p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1"
+                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              {/* Product Code & Product Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[#B0A7A9] font-medium flex items-center justify-between">
                     <span>Product Code / SKU *</span>
-                    <span className="text-[10px] text-[#D0D9C0] font-mono">e.g. ELG-9821</span>
+                    <span className="text-[10px] text-[#E9C9CE] font-mono">e.g. ELG-9821</span>
                   </label>
                   <input
                     type="text"
@@ -398,7 +929,7 @@ export default function AdminProductsPage() {
                     value={formData.productCode}
                     onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
                     placeholder="ELG-SKU-9821"
-                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#6B7C52] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
+                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
                   />
                 </div>
 
@@ -410,11 +941,12 @@ export default function AdminProductsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Florentine Satin Lipstick"
-                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#6B7C52] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
                   />
                 </div>
               </div>
 
+              {/* Subtitle & Brand (NEW REQUIREMENT) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[#B0A7A9] font-medium">Subtitle</label>
@@ -423,74 +955,156 @@ export default function AdminProductsPage() {
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                     placeholder="e.g. Bio-fermented Botanical Elixir"
-                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#6B7C52] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[#B0A7A9] font-medium flex items-center justify-between">
-                    <span>Discount (%)</span>
-                    <span className="text-[10px] text-[#6B7C52]">Optional % Off</span>
+                    <span className="flex items-center gap-1.5 text-[#E9C9CE]">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <strong>Brand Name *</strong>
+                    </span>
+                    <span className="text-[10px] text-[#A8A19F]">e.g. ELEGANTSTYLE, Dior</span>
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.discount}
-                    onChange={(e) => {
-                      const discVal = e.target.value;
-                      setFormData((prev) => {
-                        // If originalPrice exists and user types discount, we can optionally auto-calculate price
-                        const orig = parseFloat(prev.originalPrice);
-                        const disc = parseFloat(discVal);
-                        if (!isNaN(orig) && !isNaN(disc) && disc > 0 && disc < 100) {
-                          const calculatedPrice = (orig * (1 - disc / 100)).toFixed(2);
-                          return { ...prev, discount: discVal, price: calculatedPrice };
-                        }
-                        return { ...prev, discount: discVal };
-                      });
-                    }}
-                    placeholder="e.g. 20 (for 20% off)"
-                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#6B7C52] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
+                    type="text"
+                    required
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                    placeholder="ELEGANTSTYLE"
+                    className="w-full bg-[#1A1718] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-medium"
                   />
                 </div>
               </div>
 
+              {/* Colors & Sizes Inputs (NEW REQUIREMENT) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#1A1718] p-3.5 rounded-lg border border-[#2B2527]">
+                <div className="space-y-1.5">
+                  <label className="text-[#B0A7A9] font-medium flex items-center gap-1.5 text-[#E9C9CE]">
+                    <Palette className="w-3.5 h-3.5" />
+                    <span>Available Colors (Comma Separated)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.colors}
+                    onChange={(e) => setFormData({ ...formData, colors: e.target.value })}
+                    placeholder="Rose Gold, Crimson Red, Noir, Nude Silk"
+                    className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                  />
+                  {formData.colors && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      {formData.colors
+                        .split(',')
+                        .map((c) => c.trim())
+                        .filter(Boolean)
+                        .map((c, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded bg-[#262123] border border-[#3A3134] text-[10px] text-[#E9C9CE] font-mono">
+                            ● {c}
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[#B0A7A9] font-medium flex items-center gap-1.5 text-[#E9C9CE]">
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Available Sizes / Options (Comma Separated)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sizes}
+                    onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
+                    placeholder="30ml, 50ml, 100ml or S, M, L, XL"
+                    className="w-full bg-[#141213] border border-[#2B2527] focus:border-[#E9C9CE] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
+                  />
+                  {formData.sizes && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      {formData.sizes
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .map((s, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded bg-[#262123] border border-[#3A3134] text-[10px] text-[#FCFAF9] font-mono">
+                            [{s}]
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Main Category & Subcategory Selectors */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[#B0A7A9] font-medium">Main Category *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[#B0A7A9] font-medium">Main Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCategoryModalOpen(true);
+                        setCategoryModalTab('main');
+                      }}
+                      className="text-[10px] text-[#E9C9CE] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      + Add New Category
+                    </button>
+                  </div>
                   <select
                     value={formData.mainCategory}
-                    onChange={(e) => setFormData({ ...formData, mainCategory: e.target.value as MainCategory })}
+                    onChange={(e) => {
+                      const newMain = e.target.value;
+                      const matchedCat = categories.find((c) => c.slug === newMain);
+                      const defaultSub = matchedCat?.subcategories?.[0]?.slug || 'makeup';
+                      setFormData({ ...formData, mainCategory: newMain, subcategory: defaultSub });
+                    }}
                     className="w-full bg-[#1A1718] border border-[#2B2527] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
                   >
-                    <option value="beauty">Beauty & Cosmetics</option>
-                    <option value="fashion">Fashion & Style</option>
+                    {categories.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[#B0A7A9] font-medium">Subcategory *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[#B0A7A9] font-medium">Subcategory *</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCategoryModalOpen(true);
+                        setCategoryModalTab('sub');
+                      }}
+                      className="text-[10px] text-[#E9C9CE] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      + Add New Subcategory
+                    </button>
+                  </div>
                   <select
                     value={formData.subcategory}
-                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value as SubCategory })}
+                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
                     className="w-full bg-[#1A1718] border border-[#2B2527] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
                   >
-                    <option value="makeup">Makeup</option>
-                    <option value="skin-care">Skin Care</option>
-                    <option value="hair-care">Hair Care</option>
-                    <option value="belts">Belts</option>
-                    <option value="wallets">Wallets</option>
-                    <option value="hand-bags">Hand Bags</option>
-                    <option value="school-belts">School Belts</option>
-                    <option value="deals">Deals</option>
+                    {availableSubcategories.length > 0 ? (
+                      availableSubcategories.map((s) => (
+                        <option key={s.slug} value={s.slug}>
+                          {s.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={formData.subcategory}>{formData.subcategory}</option>
+                    )}
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Price, Original MSRP, Discount & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[#B0A7A9] font-medium">Selling Price ($) *</label>
+                  <label className="text-[#B0A7A9] font-medium">Price ($) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -503,24 +1117,26 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[#B0A7A9] font-medium">Original / MSRP ($)</label>
+                  <label className="text-[#B0A7A9] font-medium">Original MSRP ($)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.originalPrice}
-                    onChange={(e) => {
-                      const origVal = e.target.value;
-                      setFormData((prev) => {
-                        const orig = parseFloat(origVal);
-                        const disc = parseFloat(prev.discount);
-                        if (!isNaN(orig) && !isNaN(disc) && disc > 0 && disc < 100) {
-                          const calculatedPrice = (orig * (1 - disc / 100)).toFixed(2);
-                          return { ...prev, originalPrice: origVal, price: calculatedPrice };
-                        }
-                        return { ...prev, originalPrice: origVal };
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
                     placeholder="120.00"
+                    className="w-full bg-[#1A1718] border border-[#2B2527] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[#B0A7A9] font-medium">Discount (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    placeholder="20"
                     className="w-full bg-[#1A1718] border border-[#2B2527] text-[#FCFAF9] p-2.5 rounded focus:outline-none font-mono"
                   />
                 </div>
@@ -553,7 +1169,6 @@ export default function AdminProductsPage() {
                   </span>
                 </div>
 
-                {/* Uploaded Gallery Thumbnails Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 bg-[#1A1718] p-3 rounded border border-[#2B2527]">
                   {formData.images.map((url, idx) => (
                     <div key={idx} className="relative group aspect-square bg-[#262123] rounded border border-[#3A3134] overflow-hidden">
@@ -564,7 +1179,7 @@ export default function AdminProductsPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 bg-red-900/80 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                        className="absolute top-1 right-1 bg-red-900/80 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 cursor-pointer"
                         title="Remove Image"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -572,7 +1187,6 @@ export default function AdminProductsPage() {
                     </div>
                   ))}
 
-                  {/* Add Image Upload Button */}
                   <label className="aspect-square bg-[#262123] border border-dashed border-[#3A3134] hover:border-[#E9C9CE] rounded flex flex-col items-center justify-center text-center p-2 cursor-pointer transition-colors group">
                     <Upload className="w-4 h-4 text-[#E9C9CE] group-hover:scale-110 transition-transform" />
                     <span className="text-[9px] text-[#B0A7A9] mt-1">
@@ -587,7 +1201,6 @@ export default function AdminProductsPage() {
                   </label>
                 </div>
 
-                {/* Direct Image URL input option */}
                 <div className="flex gap-2">
                   <input
                     type="url"
@@ -599,13 +1212,14 @@ export default function AdminProductsPage() {
                   <button
                     type="button"
                     onClick={handleAddImageUrl}
-                    className="px-3 py-2 bg-[#262123] border border-[#3A3134] text-[#E9C9CE] hover:bg-[#332B2E] rounded text-xs transition-colors"
+                    className="px-3 py-2 bg-[#262123] border border-[#3A3134] text-[#E9C9CE] hover:bg-[#332B2E] rounded text-xs transition-colors cursor-pointer"
                   >
                     Add URL
                   </button>
                 </div>
               </div>
 
+              {/* Description */}
               <div className="space-y-1">
                 <label className="text-[#B0A7A9] font-medium">Description</label>
                 <textarea
@@ -617,17 +1231,18 @@ export default function AdminProductsPage() {
                 />
               </div>
 
+              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#242022]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-[#1A1718] text-[#B0A7A9] rounded hover:text-[#FFFFFF] transition-colors"
+                  className="px-4 py-2 bg-[#1A1718] text-[#B0A7A9] rounded hover:text-[#FFFFFF] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#E9C9CE] text-[#171515] font-medium rounded hover:bg-[#F3D7DC] transition-colors"
+                  className="px-5 py-2 bg-[#E9C9CE] text-[#171515] font-semibold rounded hover:bg-[#F3D7DC] transition-colors cursor-pointer shadow-md"
                 >
                   Save Product to Store
                 </button>

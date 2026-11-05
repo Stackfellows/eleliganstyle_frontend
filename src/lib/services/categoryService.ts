@@ -1,12 +1,17 @@
 import { CATEGORIES, AUDIENCE_SECTIONS } from '../data/categories';
 import { Category, SubCategory } from '../types';
+import { getStoredCategories } from '../adminStore';
 
 export function getCategories(): Category[] {
+  if (typeof window !== 'undefined') {
+    return getStoredCategories();
+  }
   return CATEGORIES;
 }
 
 export function getCategoryBySlug(slug: string): Category | undefined {
-  return CATEGORIES.find((c) => c.slug === slug);
+  const all = getCategories();
+  return all.find((c) => c.slug === slug);
 }
 
 export function getAudienceSectionBySlug(slug: string) {
@@ -18,7 +23,7 @@ export interface SubcategoryMeta {
   name: string;
   tagline: string;
   description: string;
-  parentCategorySlug: 'beauty' | 'fashion';
+  parentCategorySlug: string;
   image: string;
 }
 
@@ -91,5 +96,25 @@ export const SUBCATEGORY_METADATA: Record<string, SubcategoryMeta> = {
 
 export function getSubcategoryMeta(slug: string): SubcategoryMeta | undefined {
   const normalized = slug.toLowerCase().trim();
-  return SUBCATEGORY_METADATA[normalized];
+  if (SUBCATEGORY_METADATA[normalized]) {
+    return SUBCATEGORY_METADATA[normalized];
+  }
+
+  // Look in custom/stored categories
+  const allCategories = getCategories();
+  for (const cat of allCategories) {
+    const sub = cat.subcategories?.find((s) => s.slug === normalized);
+    if (sub) {
+      return {
+        slug: sub.slug,
+        name: sub.name,
+        tagline: `Exclusive ${sub.name} Collections`,
+        description: sub.description || `Handcrafted ${sub.name} curated with timeless elegance.`,
+        parentCategorySlug: cat.slug,
+        image: sub.image || cat.heroImage,
+      };
+    }
+  }
+
+  return undefined;
 }

@@ -1,22 +1,63 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { PRODUCTS } from '@/lib/data/products';
 import { Product } from '@/lib/types';
 
-// In-memory products store for API runtime persistence
-let adminProductsStore: Product[] = [...PRODUCTS];
+const CUSTOM_PRODUCTS_PATH = path.join(process.cwd(), 'src/lib/data/custom_products.json');
+
+function getCustomProducts(): Product[] {
+  try {
+    if (fs.existsSync(CUSTOM_PRODUCTS_PATH)) {
+      const data = fs.readFileSync(CUSTOM_PRODUCTS_PATH, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error('Failed reading custom_products.json', e);
+  }
+  return [];
+}
+
+function saveCustomProducts(products: Product[]) {
+  try {
+    fs.writeFileSync(CUSTOM_PRODUCTS_PATH, JSON.stringify(products, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed writing custom_products.json', e);
+  }
+}
 
 export async function GET() {
+  const custom = getCustomProducts();
+  const all = [...custom, ...PRODUCTS];
   return NextResponse.json({
     success: true,
-    count: adminProductsStore.length,
-    products: adminProductsStore,
+    count: all.length,
+    products: all,
   });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, mainCategory, subcategory, price, originalPrice, images, description, badge, audience } = body;
+    const {
+      name,
+      mainCategory,
+      subcategory,
+      price,
+      originalPrice,
+      discount,
+      images,
+      description,
+      subtitle,
+      badge,
+      audience,
+      brand,
+      colors,
+      sizes,
+      details,
+      productCode,
+      id
+    } = body;
 
     if (!name || !price || !mainCategory || !subcategory) {
       return NextResponse.json(
@@ -26,13 +67,18 @@ export async function POST(request: Request) {
     }
 
     const newProduct: Product = {
-      id: `prod-${Date.now()}`,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      id: id || `prod-${Date.now()}`,
+      productCode: productCode || `ELG-${Math.floor(1000 + Math.random() * 9000)}`,
+      slug: (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name,
-      subtitle: body.subtitle || 'Luxury Curation',
+      subtitle: subtitle || 'Luxury Curation',
       description: description || 'Artisanal luxury creation.',
-      price: parseFloat(price),
-      originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
+      brand: brand || 'ELEGANTSTYLE',
+      colors: Array.isArray(colors) ? colors : undefined,
+      sizes: Array.isArray(sizes) ? sizes : undefined,
+      price: typeof price === 'number' ? price : parseFloat(price),
+      originalPrice: originalPrice ? (typeof originalPrice === 'number' ? originalPrice : parseFloat(originalPrice)) : undefined,
+      discount: discount ? (typeof discount === 'number' ? discount : parseFloat(discount)) : undefined,
       rating: 5.0,
       reviewCount: 1,
       mainCategory,
@@ -43,16 +89,26 @@ export async function POST(request: Request) {
         'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200&auto=format&fit=crop',
         'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1200&auto=format&fit=crop'
       ],
-      details: body.details || ['Handcrafted using organic bio-fermented ingredients.'],
+      details: Array.isArray(details) ? details : ['Handcrafted using organic bio-fermented ingredients.'],
       inStock: true,
       createdAt: new Date().toISOString(),
     };
 
-    adminProductsStore = [newProduct, ...adminProductsStore];
+    const currentCustom = getCustomProducts();
+    const existingIndex = currentCustom.findIndex((p) => p.id === newProduct.id || p.slug === newProduct.slug);
+    let updated: Product[];
+    if (existingIndex >= 0) {
+      updated = [...currentCustom];
+      updated[existingIndex] = newProduct;
+    } else {
+      updated = [newProduct, ...currentCustom];
+    }
+
+    saveCustomProducts(updated);
 
     return NextResponse.json({
       success: true,
-      message: 'Product created and mapped to categories successfully.',
+      message: 'Product created and synced to server successfully.',
       product: newProduct,
     }, { status: 201 });
   } catch (error) {
@@ -75,7 +131,9 @@ export async function DELETE(request: Request) {
       );
     }
 
-    adminProductsStore = adminProductsStore.filter((p) => p.id !== id);
+    const currentCustom = getCustomProducts();
+    const updated = currentCustom.filter((p) => p.id !== id);
+    saveCustomProducts(updated);
 
     return NextResponse.json({
       success: true,

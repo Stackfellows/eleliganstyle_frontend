@@ -12,8 +12,8 @@ export default function AudienceSection() {
   const childrenSection = AUDIENCE_SECTIONS.find((a) => a.slug === 'children')!;
 
   return (
-    <section className="py-24 bg-[#FCFAF9] border-b border-[#ECE7E6]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+    <section className="py-14 sm:py-20 lg:py-24 bg-[#FCFAF9] border-b border-[#ECE7E6]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
         {/* Section Title */}
         <div className="text-center max-w-xl mx-auto space-y-2">
           <span className="text-[10px] uppercase tracking-[0.3em] text-[#6E6767] font-sans font-medium">
@@ -28,22 +28,23 @@ export default function AudienceSection() {
         </div>
 
         {/* Asymmetrical Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
           {/* WOMEN: Large Left Feature */}
-          <div className="lg:col-span-7 group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[500px] flex flex-col justify-between p-8 sm:p-12">
+          <div className="lg:col-span-7 group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[380px] sm:min-h-[500px] flex flex-col justify-between p-6 sm:p-12">
             <div className="absolute inset-0 z-0">
               <Image
-                src={womenSection.image}
+                src="/Serene Beauty with Soft Floral Accents.png"
                 alt="Women Collection"
                 fill
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.9]"
+                priority
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.92]"
                 sizes="(max-width: 1024px) 100vw, 60vw"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#171515]/85 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#171515]/85 via-[#171515]/20 to-transparent" />
             </div>
 
             <div className="relative z-10">
-              <span className="bg-[#F8E8EA] text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1">
+              <span className="bg-[#F8E8EA] text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1 font-medium">
                 FOR WOMEN
               </span>
             </div>
@@ -83,12 +84,12 @@ export default function AudienceSection() {
           </div>
 
           {/* MEN & CHILDREN: Stacked Right Grid */}
-          <div className="lg:col-span-5 space-y-8 flex flex-col justify-between h-full">
+          <div className="lg:col-span-5 space-y-6 sm:space-y-8 flex flex-col justify-between h-full">
             {/* MEN */}
-            <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
+            <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[210px] sm:min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
               <div className="absolute inset-0 z-0">
                 <Image
-                  src={menSection.image}
+                  src="/Refined Man with Leather Accessories.png"
                   alt="Men Collection"
                   fill
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.88]"
@@ -98,7 +99,7 @@ export default function AudienceSection() {
               </div>
 
               <div className="relative z-10 flex justify-between items-start">
-                <span className="bg-[#FFFFFF]/90 text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1">
+                <span className="bg-[#FFFFFF]/90 text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1 font-medium">
                   FOR MEN
                 </span>
               </div>
@@ -119,10 +120,10 @@ export default function AudienceSection() {
             </div>
 
             {/* CHILDREN */}
-            <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
+            <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[210px] sm:min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
               <div className="absolute inset-0 z-0">
                 <Image
-                  src={childrenSection.image}
+                  src="/Joyful Garden Cuddle with a Bunny.png"
                   alt="Children Collection"
                   fill
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.92]"
@@ -132,7 +133,7 @@ export default function AudienceSection() {
               </div>
 
               <div className="relative z-10 flex justify-between items-start">
-                <span className="bg-[#F8E8EA] text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1">
+                <span className="bg-[#F8E8EA] text-[#171515] text-[10px] uppercase tracking-[0.25em] font-sans px-3 py-1 font-medium">
                   FOR CHILDREN
                 </span>
               </div>

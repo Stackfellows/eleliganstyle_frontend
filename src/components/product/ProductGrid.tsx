@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
+import { getStoredProducts } from '@/lib/adminStore';
 import ProductCard from './ProductCard';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 
@@ -18,14 +19,44 @@ export default function ProductGrid({
   subtitle,
   showFilters = true,
 }: ProductGridProps) {
+  const [items, setItems] = useState<Product[]>(products);
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'rating'>('newest');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [selectedAudience, setSelectedAudience] = useState<string>('all');
 
-  // Filter subcategories dynamically
-  const subcategories = Array.from(new Set(products.map((p) => p.subcategory)));
+  useEffect(() => {
+    try {
+      const stored = getStoredProducts();
+      if (stored && stored.length > 0) {
+        const targetMain = products[0]?.mainCategory;
+        const targetSub = products.length > 0 && products.every((p) => p.subcategory === products[0].subcategory)
+          ? products[0].subcategory
+          : null;
 
-  let filtered = [...products];
+        const matchingStored = stored.filter((sp) => {
+          if (targetSub) return sp.subcategory === targetSub;
+          if (targetMain) return sp.mainCategory === targetMain;
+          return true;
+        });
+
+        const map = new Map<string, Product>();
+        matchingStored.forEach((p) => map.set(p.id, p));
+        products.forEach((p) => {
+          if (!map.has(p.id)) map.set(p.id, p);
+        });
+        setItems(Array.from(map.values()));
+      } else {
+        setItems(products);
+      }
+    } catch (e) {
+      setItems(products);
+    }
+  }, [products]);
+
+  // Filter subcategories dynamically
+  const subcategories = Array.from(new Set(items.map((p) => p.subcategory)));
+
+  let filtered = [...items];
 
   if (selectedSubcategory !== 'all') {
     filtered = filtered.filter((p) => p.subcategory === selectedSubcategory);

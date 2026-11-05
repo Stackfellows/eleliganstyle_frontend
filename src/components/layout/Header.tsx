@@ -8,12 +8,16 @@ import { useCart } from '@/lib/context/CartContext';
 import { useWishlist } from '@/lib/context/WishlistContext';
 import { useUI } from '@/lib/context/UIContext';
 import { CATEGORIES, AUDIENCE_SECTIONS } from '@/lib/data/categories';
+import { getStoredCategories } from '@/lib/adminStore';
+import { Category } from '@/lib/types';
 
 export default function Header() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
 
   const { itemCount } = useCart();
   const { wishlistCount } = useWishlist();
@@ -21,6 +25,17 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
+    setCategories(getStoredCategories());
+    try {
+      const sessionStr = localStorage.getItem('elegant_user_session');
+      if (sessionStr) {
+        const u = JSON.parse(sessionStr);
+        if (u?.name) setUserName(u.name);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
     const handleScroll = () => {
       if (window.scrollY > 20) {
         setIsScrolled(true);
@@ -135,6 +150,50 @@ export default function Header() {
             )}
           </div>
 
+          {/* Dynamic Categories & Subcategories Dropdown */}
+          <div
+            className="relative py-2 group"
+            onMouseEnter={() => setActiveDropdown('categories')}
+            onMouseLeave={() => setActiveDropdown(null)}
+          >
+            <div
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium cursor-pointer ${
+                activeDropdown === 'categories' ? 'text-[#C58C97]' : ''
+              }`}
+            >
+              <span>Collections</span>
+              <ChevronDown className="w-3 h-3 text-[#171515] group-hover:text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
+            </div>
+
+            {activeDropdown === 'categories' && (
+              <div className="absolute top-full left-0 min-w-[500px] bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                {categories.map((cat) => (
+                  <div key={cat.slug} className="space-y-2.5">
+                    <Link
+                      href={`/${cat.slug}`}
+                      className="font-serif text-sm font-medium text-[#171515] hover:text-[#C58C97] transition-colors flex items-center justify-between border-b border-[#ECE7E6] pb-1.5"
+                    >
+                      <span>{cat.name}</span>
+                      <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Explore →</span>
+                    </Link>
+                    <ul className="space-y-1.5 text-xs text-[#6E6767] font-normal normal-case">
+                      {cat.subcategories.map((sub) => (
+                        <li key={sub.slug}>
+                          <Link
+                            href={`/${cat.slug}/${sub.slug}`}
+                            className="hover:text-[#171515] hover:translate-x-0.5 transition-all block py-0.5"
+                          >
+                            {sub.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
 
 
           {/* Audiences */}
@@ -188,10 +247,14 @@ export default function Header() {
 
           <Link
             href="/account"
-            className="hidden sm:block p-1.5 hover:text-[#6E6767] transition-colors"
-            aria-label="Customer Account"
+            className="hidden sm:block p-1.5 hover:text-[#6E6767] transition-colors relative"
+            aria-label={userName ? `Client Account (${userName})` : 'Customer Account'}
+            title={userName ? `Privilege Member: ${userName}` : 'Sign In / Register'}
           >
             <User className="w-4 h-4 stroke-[1.5]" />
+            {mounted && userName && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#C58C97]" />
+            )}
           </Link>
 
           <Link
