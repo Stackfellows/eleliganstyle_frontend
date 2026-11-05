@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    let body: any = {};
+    let body: Record<string, unknown> = {};
     try {
       body = await request.json();
     } catch {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { email, password } = body;
+    const { email, password } = body as { email?: string; password?: string };
 
     if (email === 'admin@elegantstyle.com' && password === 'admin123') {
       return NextResponse.json({
@@ -35,9 +35,10 @@ export async function POST(request: Request) {
       { success: false, message: 'Invalid administrator credentials.' },
       { status: 401 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : 'Server authentication error.';
     return NextResponse.json(
-      { success: false, message: error?.message || 'Server authentication error.' },
+      { success: false, message: errMessage },
       { status: 500 }
     );
   }

@@ -14,18 +14,47 @@ const transporter = nodemailer.createTransport({
 const FROM_EMAIL = process.env.EMAIL_FROM || '"ELEGANTSTYLE MAISON" <maazarshad89@gmail.com>';
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'maazarshad89@gmail.com';
 
+export interface EmailOrderItem {
+  productName?: string;
+  name?: string;
+  quantity: number;
+  price?: number;
+  pricePKR?: number;
+}
+
+export interface EmailOrder {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  totalPKR?: number;
+  totalAmount?: number;
+  paymentMethod?: string;
+  shippingAddress?: string | {
+    street?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
+  };
+  items?: EmailOrderItem[];
+}
+
 /**
  * Send Customer Order Confirmation Email
  */
-export async function sendOrderConfirmationEmail(order: any) {
+export async function sendOrderConfirmationEmail(order: EmailOrder) {
   try {
+    const shippingCity = typeof order.shippingAddress === 'object' ? order.shippingAddress?.city || 'Pakistan' : 'Pakistan';
+    const shippingStreet = typeof order.shippingAddress === 'string' ? order.shippingAddress : (order.shippingAddress?.street || '');
+    const totalDisplay = (order.totalPKR || order.totalAmount || 0).toLocaleString();
+
     const itemsListHtml = (order.items || [])
       .map(
-        (it: any) => `
+        (it: EmailOrderItem) => `
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #ECE7E6;">${it.productName || it.name}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ECE7E6;">${it.productName || it.name || 'Creation'}</td>
           <td style="padding: 10px; border-bottom: 1px solid #ECE7E6; text-align: center;">${it.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #ECE7E6; text-align: right; font-family: monospace;">PKR ${(it.pricePKR || it.price * 280).toLocaleString()}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ECE7E6; text-align: right; font-family: monospace;">PKR ${(it.pricePKR || (it.price ? it.price * 280 : 0)).toLocaleString()}</td>
         </tr>`
       )
       .join('');
@@ -57,14 +86,14 @@ export async function sendOrderConfirmationEmail(order: any) {
             </table>
 
             <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #171515; text-align: right; font-size: 14px;">
-              <strong>Total Amount: <span style="color: #A21D21;">PKR ${(order.totalPKR || order.totalAmount).toLocaleString()}</span></strong>
+              <strong>Total Amount: <span style="color: #A21D21;">PKR ${totalDisplay}</span></strong>
             </div>
           </div>
 
           <div style="background: #FFFFFF; border: 1px solid #ECE7E6; padding: 15px; font-size: 12px; margin-bottom: 20px;">
             <h4 style="margin: 0 0 10px 0; text-transform: uppercase; font-size: 10px; color: #C58C97; letter-spacing: 1px;">Delivery Destination</h4>
-            <p style="margin: 2px 0;"><strong>City:</strong> ${order.shippingAddress?.city || 'Pakistan'}</p>
-            <p style="margin: 2px 0;"><strong>Address:</strong> ${typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.street}</p>
+            <p style="margin: 2px 0;"><strong>City:</strong> ${shippingCity}</p>
+            <p style="margin: 2px 0;"><strong>Address:</strong> ${shippingStreet}</p>
             <p style="margin: 2px 0;"><strong>Payment Method:</strong> ${order.paymentMethod || 'Cash on Delivery (COD)'}</p>
           </div>
 
@@ -93,8 +122,12 @@ export async function sendOrderConfirmationEmail(order: any) {
 /**
  * Send New Order Alert Notification to Admin (maazarshad89@gmail.com)
  */
-export async function sendAdminNewOrderAlert(order: any) {
+export async function sendAdminNewOrderAlert(order: EmailOrder) {
   try {
+    const shippingCity = typeof order.shippingAddress === 'object' ? order.shippingAddress?.city || 'Pakistan' : 'Pakistan';
+    const shippingStreet = typeof order.shippingAddress === 'string' ? order.shippingAddress : (order.shippingAddress?.street || '');
+    const totalDisplay = (order.totalPKR || order.totalAmount || 0).toLocaleString();
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #3A3134; background: #141213; color: #F3ECEB; padding: 20px;">
         <div style="border-bottom: 1px solid #242022; pb: 15px; margin-bottom: 15px;">
@@ -106,9 +139,9 @@ export async function sendAdminNewOrderAlert(order: any) {
           <tr><td style="padding: 6px 0; color: #7A7375;">Customer Name:</td><td style="color: #FFFFFF; font-weight: bold;">${order.customerName}</td></tr>
           <tr><td style="padding: 6px 0; color: #7A7375;">Customer Phone:</td><td style="color: #E9C9CE; font-family: monospace;">${order.customerPhone || 'N/A'}</td></tr>
           <tr><td style="padding: 6px 0; color: #7A7375;">Customer Email:</td><td>${order.customerEmail}</td></tr>
-          <tr><td style="padding: 6px 0; color: #7A7375;">City & Address:</td><td>${order.shippingAddress?.city || ''}, ${typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.street}</td></tr>
+          <tr><td style="padding: 6px 0; color: #7A7375;">City & Address:</td><td>${shippingCity}, ${shippingStreet}</td></tr>
           <tr><td style="padding: 6px 0; color: #7A7375;">Payment Channel:</td><td>${order.paymentMethod || 'Cash on Delivery'}</td></tr>
-          <tr><td style="padding: 6px 0; color: #7A7375;">Total Amount:</td><td style="color: #FFFFFF; font-size: 16px; font-weight: bold;">PKR ${(order.totalPKR || order.totalAmount).toLocaleString()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #7A7375;">Total Amount:</td><td style="color: #FFFFFF; font-size: 16px; font-weight: bold;">PKR ${totalDisplay}</td></tr>
         </table>
 
         <div style="margin-top: 20px; pt: 15px; border-top: 1px solid #242022; text-align: center;">
@@ -120,7 +153,7 @@ export async function sendAdminNewOrderAlert(order: any) {
     await transporter.sendMail({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `🚨 New Order #${order.id} Received — PKR ${(order.totalPKR || order.totalAmount).toLocaleString()}`,
+      subject: `🚨 New Order #${order.id} Received — PKR ${totalDisplay}`,
       html,
     });
 
@@ -133,7 +166,7 @@ export async function sendAdminNewOrderAlert(order: any) {
 /**
  * Send Order Fulfillment Status Update Email to Customer
  */
-export async function sendOrderStatusUpdateEmail(order: any, newStatus: string) {
+export async function sendOrderStatusUpdateEmail(order: EmailOrder, newStatus: string) {
   try {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FCFAF9; border: 1px solid #ECE7E6; padding: 25px;">

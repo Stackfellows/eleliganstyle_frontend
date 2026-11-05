@@ -27,19 +27,21 @@ export default function SearchOverlay() {
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
-      setIsSearching(false);
-      return;
+      const timer = setTimeout(() => {
+        setResults([]);
+        setIsSearching(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
-    setIsSearching(true);
-    const timer = setTimeout(() => {
+    const searchTimer = setTimeout(() => {
+      setIsSearching(true);
       const res = searchProducts(query);
       setResults(res);
       setIsSearching(false);
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(searchTimer);
   }, [query]);
 
   return (
@@ -201,10 +203,10 @@ export default function SearchOverlay() {
                   ) : (
                     <div className="py-12 text-center space-y-3">
                       <p className="font-serif text-lg text-[#171515]">
-                        No formulations or leather goods match "{query}"
+                        No formulations or leather goods match &ldquo;{query}&rdquo;
                       </p>
                       <p className="text-xs text-[#6E6767] font-sans">
-                        Try searching for "Nectar", "Lipstick", "Belt", "Wallet", or "Care".
+                        Try searching for &ldquo;Nectar&rdquo;, &ldquo;Lipstick&rdquo;, &ldquo;Belt&rdquo;, &ldquo;Wallet&rdquo;, or &ldquo;Care&rdquo;.
                       </p>
                     </div>
                   )}

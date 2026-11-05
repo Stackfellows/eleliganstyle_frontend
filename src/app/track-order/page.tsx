@@ -6,13 +6,52 @@ import { useSearchParams } from 'next/navigation';
 import { Search, Package, Truck, CheckCircle2, Clock, MapPin, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
+interface TrackingStep {
+  title: string;
+  description: string;
+  date: string;
+  done: boolean;
+}
+
+interface TrackingResult {
+  orderId: string;
+  placedDate: string;
+  estimatedDelivery: string;
+  carrier: string;
+  trackingNumber: string;
+  shippingAddress: string;
+  status: string;
+  customerName?: string;
+  customerPhone?: string;
+  paymentMethod?: string;
+  totalPKR?: number;
+  items: unknown[];
+  steps: TrackingStep[];
+}
+
+interface OrderRecord {
+  id: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  status?: string;
+  createdAt?: string | number;
+  customerName?: string;
+  paymentMethod?: string;
+  totalPKR?: number;
+  items?: unknown[];
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+  };
+}
+
 function TrackOrderContent() {
   const searchParams = useSearchParams();
   const initialId = searchParams.get('id') || '';
 
   const [orderNumber, setOrderNumber] = useState(initialId);
   const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [trackingResult, setTrackingResult] = useState<any>(null);
+  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -34,7 +73,7 @@ function TrackOrderContent() {
     setNotFound(false);
 
     try {
-      let candidateOrders: any[] = [];
+      let candidateOrders: OrderRecord[] = [];
 
       // 1. Fetch from server API
       try {
@@ -53,7 +92,7 @@ function TrackOrderContent() {
         if (local) {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed)) {
-            parsed.forEach((po) => {
+            parsed.forEach((po: OrderRecord) => {
               if (!candidateOrders.some((co) => co.id === po.id)) {
                 candidateOrders.push(po);
               }
@@ -65,7 +104,7 @@ function TrackOrderContent() {
       }
 
       // Find match
-      const found = candidateOrders.find((o: any) => {
+      const found = candidateOrders.find((o: OrderRecord) => {
         const orderId = (o.id || '').toLowerCase();
         const customerPhone = (o.customerPhone || '').toLowerCase();
         const customerEmail = (o.customerEmail || '').toLowerCase();
@@ -289,7 +328,7 @@ function TrackOrderContent() {
               </div>
 
               <div className="relative pl-6 sm:pl-8 space-y-8 border-l-2 border-[#ECE7E6]">
-                {trackingResult.steps.map((step: any, index: number) => (
+                {trackingResult.steps.map((step: TrackingStep, index: number) => (
                   <div key={index} className="relative">
                     <div
                       className={`absolute -left-[31px] sm:-left-[39px] top-0 w-6 h-6 rounded-full flex items-center justify-center border-2 ${

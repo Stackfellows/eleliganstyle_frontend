@@ -22,7 +22,7 @@ interface TestResult {
   status: 'PENDING' | 'PASS' | 'FAIL';
   statusCode?: number;
   timeMs?: number;
-  responsePayload?: any;
+  responsePayload?: unknown;
 }
 
 export default function AdminApiTestingPage() {
@@ -86,7 +86,7 @@ export default function AdminApiTestingPage() {
 
     try {
       let res: Response;
-      let bodyData: any = null;
+      let bodyData: unknown = null;
 
       if (test.endpoint === '/api/auth/login') {
         res = await fetch('/api/auth/login', {
@@ -172,8 +172,9 @@ export default function AdminApiTestingPage() {
         };
         return copy;
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       const duration = Math.round(performance.now() - startTime);
+      const errMsg = e instanceof Error ? e.message : 'Request network error';
       setTestCases((prev) => {
         const copy = [...prev];
         copy[index] = {
@@ -181,7 +182,7 @@ export default function AdminApiTestingPage() {
           status: 'FAIL',
           statusCode: 500,
           timeMs: duration,
-          responsePayload: { error: e.message || 'Request network error' }
+          responsePayload: { error: errMsg }
         };
         return copy;
       });
@@ -196,7 +197,7 @@ export default function AdminApiTestingPage() {
     setRunningAll(false);
   };
 
-  const handleCopyJSON = (data: any, idx: number) => {
+  const handleCopyJSON = (data: unknown, idx: number) => {
     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
     setCopiedIndex(idx);
     setTimeout(() => setCopiedIndex(null), 2000);
@@ -336,7 +337,7 @@ export default function AdminApiTestingPage() {
             </div>
 
             {/* Response JSON Viewer */}
-            {test.responsePayload && (
+            {Boolean(test.responsePayload) && (
               <div className="mt-3 bg-[#0D0C0C] border border-[#242022] p-3 rounded relative font-mono text-[11px] text-[#A8A19F] overflow-x-auto max-h-48">
                 <div className="flex items-center justify-between text-[10px] text-[#7A7375] border-b border-[#242022] pb-1.5 mb-2">
                   <span>RESPONSE PAYLOAD</span>

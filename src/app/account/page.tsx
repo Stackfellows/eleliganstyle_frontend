@@ -45,6 +45,8 @@ interface StoredOrder {
   status: string;
   totalPKR: number;
   paymentMethod: string;
+  customerEmail?: string;
+  customerPhone?: string;
   items: Array<{
     name?: string;
     productName?: string;
@@ -139,7 +141,7 @@ function AccountContent() {
           const userEmail = (user.email || '').toLowerCase().trim();
           const userPhone = (user.phone || '').trim();
 
-          const matching = data.orders.filter((o: any) => {
+          const matching = data.orders.filter((o: StoredOrder) => {
             const orderEmail = (o.customerEmail || '').toLowerCase().trim();
             const orderPhone = (o.customerPhone || '').trim();
             return (
@@ -149,7 +151,7 @@ function AccountContent() {
           });
 
           // Deduplicate by ID
-          matching.forEach((m: any) => {
+          matching.forEach((m: StoredOrder) => {
             if (!combined.some((c) => c.id === m.id)) {
               combined.push(m);
             }

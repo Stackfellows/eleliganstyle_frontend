@@ -6,7 +6,7 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import ProductGrid from '@/components/product/ProductGrid';
 import { getStoredCategories, getStoredProducts } from '@/lib/adminStore';
 import { Category, Product } from '@/lib/types';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export default function CategoryClientFallback({ slug }: { slug: string }) {
   const [mounted, setMounted] = useState(false);
@@ -14,15 +14,18 @@ export default function CategoryClientFallback({ slug }: { slug: string }) {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    setMounted(true);
-    const storedCats = getStoredCategories();
-    const matched = storedCats.find((c) => c.slug === slug);
-    if (matched) {
-      setCategory(matched);
-      const allProds = getStoredProducts();
-      const filtered = allProds.filter((p) => p.mainCategory === slug);
-      setProducts(filtered);
-    }
+    const timer = setTimeout(() => {
+      setMounted(true);
+      const storedCats = getStoredCategories();
+      const matched = storedCats.find((c) => c.slug === slug);
+      if (matched) {
+        setCategory(matched);
+        const allProds = getStoredProducts();
+        const filtered = allProds.filter((p) => p.mainCategory === slug);
+        setProducts(filtered);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [slug]);
 
   if (!mounted) {

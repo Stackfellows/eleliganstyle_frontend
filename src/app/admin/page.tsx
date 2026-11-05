@@ -28,13 +28,39 @@ import {
 } from 'lucide-react';
 import { getStoredProducts, getStoredOffers } from '@/lib/adminStore';
 
+interface AdminDashboardItem {
+  productName?: string;
+  name?: string;
+  quantity?: number;
+  price?: number;
+  pricePKR?: number;
+}
+
+interface AdminDashboardOrder {
+  id: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  totalPKR?: number;
+  paymentMethod?: string;
+  status?: string;
+  createdAt?: string | number;
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    province?: string;
+    deliveryNotes?: string;
+  };
+  items?: AdminDashboardItem[];
+}
+
 export default function AdminDashboardPage() {
   const [productsCount, setProductsCount] = useState(0);
   const [offersCount, setOffersCount] = useState(0);
   const [ordersCount, setOrdersCount] = useState(0);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<AdminDashboardOrder[]>([]);
   const [dashboardFilter, setDashboardFilter] = useState('All');
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<AdminDashboardOrder | null>(null);
 
   useEffect(() => {
     const prods = getStoredProducts();
@@ -45,7 +71,7 @@ export default function AdminDashboardPage() {
     // Fetch live orders
     async function fetchOrders() {
       try {
-        let combined: any[] = [];
+        let combined: AdminDashboardOrder[] = [];
         const res = await fetch('/api/orders');
         const data = await res.json();
         if (data.success && Array.isArray(data.orders)) {
@@ -58,14 +84,16 @@ export default function AdminDashboardPage() {
           if (local) {
             const parsed = JSON.parse(local);
             if (Array.isArray(parsed)) {
-              parsed.forEach((po: any) => {
+              parsed.forEach((po: AdminDashboardOrder) => {
                 if (!combined.some((co) => co.id === po.id)) {
                   combined.unshift(po);
                 }
               });
             }
           }
-        } catch (e) {}
+        } catch {
+          // ignore localStorage error
+        }
 
         setOrdersCount(combined.length);
         setRecentOrders(combined.slice(0, 10));
@@ -94,7 +122,7 @@ export default function AdminDashboardPage() {
     { name: 'Saddle Leather Wallets', count: 5, color: '#6E4950', percent: '12%' },
   ];
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'Delivered':
         return 'bg-emerald-950 text-emerald-300 border-emerald-800';
@@ -357,7 +385,7 @@ export default function AdminDashboardPage() {
                 .map((ord) => {
                   const city = ord.shippingAddress?.city || 'Pakistan';
                   const itemsSummary = (ord.items || [])
-                    .map((i: any) => `${i.productName || i.name} (×${i.quantity || 1})`)
+                    .map((i: AdminDashboardItem) => `${i.productName || i.name} (×${i.quantity || 1})`)
                     .join(', ');
 
                   return (
@@ -462,7 +490,7 @@ export default function AdminDashboardPage() {
                 Purchased Items ({selectedOrder.items?.length || 0})
               </span>
               <div className="bg-[#1A1718] p-3 rounded border border-[#2B2527] space-y-1.5 divide-y divide-[#2B2527]">
-                {(selectedOrder.items || []).map((it: any, idx: number) => (
+                {(selectedOrder.items || []).map((it: AdminDashboardItem, idx: number) => (
                   <div key={idx} className="flex items-center justify-between pt-1.5 first:pt-0">
                     <span className="text-[#FFFFFF]">
                       {it.productName || it.name} × {it.quantity || 1}

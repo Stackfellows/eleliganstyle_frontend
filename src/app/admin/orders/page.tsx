@@ -68,6 +68,29 @@ export interface CustomerOrder {
   trackingNumber?: string;
 }
 
+interface RawOrderItem {
+  id?: string;
+  name?: string;
+  productName?: string;
+  quantity?: number;
+  price?: number;
+  pricePKR?: number;
+  image?: string;
+}
+
+interface RawOrder {
+  id: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  shippingAddress?: string | { street: string; city: string; province: string; postalCode: string };
+  items?: RawOrderItem[];
+  totalPKR?: number;
+  paymentMethod?: string;
+  status?: OrderStatus;
+  createdAt?: string | number;
+}
+
 const INITIAL_ORDERS: CustomerOrder[] = [
   {
     id: 'ORD-PK-9821',
@@ -220,7 +243,7 @@ function AdminOrdersContent() {
         const res = await fetch('/api/orders');
         const data = await res.json();
         if (data.success && Array.isArray(data.orders)) {
-          const formatted: CustomerOrder[] = data.orders.map((o: any) => ({
+          const formatted: CustomerOrder[] = data.orders.map((o: RawOrder) => ({
             id: o.id,
             customerName: o.customerName || 'Valued Client',
             customerPhone: o.customerPhone || '+92 300 0000000',
@@ -228,7 +251,7 @@ function AdminOrdersContent() {
             shippingAddress: typeof o.shippingAddress === 'string'
               ? { street: o.shippingAddress, city: 'Lahore', province: 'Punjab', postalCode: '54000' }
               : o.shippingAddress || { street: 'Main Road', city: 'Lahore', province: 'Punjab', postalCode: '54000' },
-            items: (o.items || []).map((it: any, idx: number) => ({
+            items: (o.items || []).map((it: RawOrderItem, idx: number) => ({
               id: `item-${idx}`,
               name: it.productName || it.name || 'Artisanal Creation',
               quantity: it.quantity || 1,
@@ -262,15 +285,15 @@ function AdminOrdersContent() {
         if (userOrders) {
           const parsed = JSON.parse(userOrders);
           if (Array.isArray(parsed)) {
-            parsed.forEach((po: any) => {
+            parsed.forEach((po: RawOrder) => {
               if (!combined.some((c) => c.id === po.id)) {
                 combined.unshift({
                   id: po.id,
                   customerName: po.customerName || 'Online Client',
                   customerPhone: po.customerPhone || '+92 300 0000000',
                   customerEmail: po.customerEmail || 'customer@maison.pk',
-                  shippingAddress: po.shippingAddress || { street: 'Address', city: 'Lahore', province: 'Punjab', postalCode: '54000' },
-                  items: (po.items || []).map((it: any, idx: number) => ({
+                  shippingAddress: (typeof po.shippingAddress === 'object' ? po.shippingAddress : { street: 'Address', city: 'Lahore', province: 'Punjab', postalCode: '54000' }) || { street: 'Address', city: 'Lahore', province: 'Punjab', postalCode: '54000' },
+                  items: (po.items || []).map((it: RawOrderItem, idx: number) => ({
                     id: `user-it-${idx}`,
                     name: it.productName || it.name || 'Creation',
                     quantity: it.quantity || 1,

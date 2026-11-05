@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Product } from '@/lib/types';
+import { Product, Audience } from '@/lib/types';
 import { getStoredProducts } from '@/lib/adminStore';
 import ProductCard from './ProductCard';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function ProductGrid({
   }
 
   if (selectedAudience !== 'all') {
-    filtered = filtered.filter((p) => p.audience.includes(selectedAudience as any));
+    filtered = filtered.filter((p) => p.audience.includes(selectedAudience as Audience));
   }
 
   if (sortBy === 'price-asc') {
@@ -128,7 +128,9 @@ export default function ProductGrid({
               <div className="relative">
                 <select
                   value={sortBy}
-                  onChange={(e: any) => setSortBy(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setSortBy(e.target.value as 'newest' | 'price-asc' | 'price-desc' | 'rating')
+                  }
                   className="appearance-none bg-[#FFFFFF] border border-[#ECE7E6] text-[#171515] py-2 pl-3 pr-8 rounded-none uppercase tracking-wider text-[11px] focus:outline-none cursor-pointer"
                 >
                   <option value="newest">Sort: Newest First</option>
