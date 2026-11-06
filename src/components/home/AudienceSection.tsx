@@ -33,10 +33,11 @@ export default function AudienceSection() {
           <div className="lg:col-span-7 group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[380px] sm:min-h-[500px] flex flex-col justify-between p-6 sm:p-12">
             <div className="absolute inset-0 z-0">
               <Image
-                src="/Serene Beauty with Soft Floral Accents.png"
+                src="/Serene Beauty with Soft Floral Accents.webp"
                 alt="Women Collection"
                 fill
                 priority
+                decoding="async"
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.92]"
                 sizes="(max-width: 1024px) 100vw, 60vw"
               />
@@ -89,9 +90,11 @@ export default function AudienceSection() {
             <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[210px] sm:min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
               <div className="absolute inset-0 z-0">
                 <Image
-                  src="/Refined Man with Leather Accessories.png"
+                  src="/Refined Man with Leather Accessories.webp"
                   alt="Men Collection"
                   fill
+                  loading="eager"
+                  decoding="async"
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.88]"
                   sizes="(max-width: 1024px) 100vw, 40vw"
                 />
@@ -123,9 +126,11 @@ export default function AudienceSection() {
             <div className="group relative bg-[#FFFFFF] border border-[#ECE7E6] overflow-hidden min-h-[210px] sm:min-h-[236px] p-6 sm:p-8 flex flex-col justify-between">
               <div className="absolute inset-0 z-0">
                 <Image
-                  src="/Joyful Garden Cuddle with a Bunny.png"
+                  src="/Joyful Garden Cuddle with a Bunny.webp"
                   alt="Children Collection"
                   fill
+                  loading="eager"
+                  decoding="async"
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-[0.92]"
                   sizes="(max-width: 1024px) 100vw, 40vw"
                 />

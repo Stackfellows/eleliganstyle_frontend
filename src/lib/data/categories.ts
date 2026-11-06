@@ -71,7 +71,7 @@ export const AUDIENCE_SECTIONS = [
     name: 'Women',
     tagline: 'Sensual Elegance & Luminous Care',
     description: 'Explore radiant skincare elixirs, silk lip colors, calfskin handbags, and refined zip compact wallets.',
-    image: '/Serene Beauty with Soft Floral Accents.png',
+    image: '/Serene Beauty with Soft Floral Accents.webp',
     subcategories: ['makeup', 'skin-care', 'wallets', 'belts', 'hand-bags']
   },
   {
@@ -79,7 +79,7 @@ export const AUDIENCE_SECTIONS = [
     name: 'Men',
     tagline: 'Subtle Precision & Craftsmanship',
     description: 'Hand-woven Italian calfskin belts and vegetable-tanned saddle leather bifolds.',
-    image: '/Refined Man with Leather Accessories.png',
+    image: '/Refined Man with Leather Accessories.webp',
     subcategories: ['belts', 'wallets']
   },
   {
@@ -87,7 +87,7 @@ export const AUDIENCE_SECTIONS = [
     name: 'Children',
     tagline: 'Gentle Pure Botanical Care & Essentials',
     description: 'Pediatrician-tested soothing balms, tear-free oat cleansers, and durable school leather belts.',
-    image: '/Joyful Garden Cuddle with a Bunny.png',
+    image: '/Joyful Garden Cuddle with a Bunny.webp',
     subcategories: ['skin-care', 'hair-care', 'school-belts']
   }
 ];

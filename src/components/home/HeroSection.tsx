@@ -9,13 +9,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const HERO_SLIDES = [
   {
     id: 'subtle-elegance',
-    image: '/Subtle Elegance Beauty Collection.png',
+    image: '/Subtle Elegance Beauty Collection.webp',
     alt: 'ELEGANTSTYLE — Subtle Elegance Beauty Collection',
     href: '/collections',
   },
   {
     id: 'botanical-skincare',
-    image: '/Botanical Skincare Still Life.png',
+    image: '/Botanical Skincare Still Life.webp',
     alt: 'ELEGANTSTYLE — Botanical Skincare Still Life',
     href: '/beauty/skin-care',
   },
@@ -90,28 +90,32 @@ export default function HeroSection() {
       onTouchEnd={handleTouchEnd}
       className="relative w-full aspect-[2172/724] min-h-[160px] sm:min-h-[260px] md:min-h-[380px] lg:min-h-[460px] xl:min-h-[520px] bg-[#FCFAF9] overflow-hidden select-none border-b border-[#ECE7E6] touch-pan-y"
     >
-      {/* Carousel Banner Slide */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.7, ease: 'easeInOut' }}
-          className="absolute inset-0 w-full h-full"
-        >
-          <Link href={slide.href} className="block relative w-full h-full cursor-pointer">
-            <Image
-              src={slide.image}
-              alt={slide.alt}
-              fill
-              priority
-              className="object-cover object-center"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 2172px"
-            />
-          </Link>
-        </motion.div>
-      </AnimatePresence>
+      {/* Carousel Banner Slides - Pre-mounted for Instant Zero-Lag Transitions */}
+      {HERO_SLIDES.map((s, idx) => {
+        const isActive = idx === currentSlide;
+        return (
+          <div
+            key={s.id}
+            aria-hidden={!isActive}
+            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+              isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+            }`}
+          >
+            <Link href={s.href} className="block relative w-full h-full cursor-pointer">
+              <Image
+                src={s.image}
+                alt={s.alt}
+                fill
+                priority
+                loading="eager"
+                decoding="async"
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1920px"
+              />
+            </Link>
+          </div>
+        );
+      })}
 
       {/* Luxury Left/Right Carousel Controls (Touch-optimized) */}
       <div className="absolute inset-y-0 left-2 sm:left-6 flex items-center z-20 pointer-events-none">
