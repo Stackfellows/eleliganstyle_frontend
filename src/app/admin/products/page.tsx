@@ -45,6 +45,12 @@ export default function AdminProductsPage() {
   const [categoryModalTab, setCategoryModalTab] = useState<'main' | 'sub'>('main');
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Quick inline add category/subcategory inside Product Modal
+  const [isAddingInlineCategory, setIsAddingInlineCategory] = useState(false);
+  const [inlineCategoryName, setInlineCategoryName] = useState('');
+  const [isAddingInlineSubcategory, setIsAddingInlineSubcategory] = useState(false);
+  const [inlineSubcategoryName, setInlineSubcategoryName] = useState('');
+
   // New Main Category Form State
   const [newCatName, setNewCatName] = useState('');
   const [newCatSlug, setNewCatSlug] = useState('');
@@ -290,6 +296,48 @@ export default function AdminProductsPage() {
     setNewSubDescription('');
     setNewSubImage('');
     alert(`Subcategory "${newSubName.trim()}" created under ${targetParentSlug} successfully!`);
+  };
+
+  // Quick Inline Category creation directly inside Add Product modal
+  const handleQuickAddInlineCategory = () => {
+    const name = inlineCategoryName.trim();
+    if (!name) return;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const updated = addCustomMainCategory({
+      name,
+      slug,
+      tagline: `Exclusive ${name} luxury edition`,
+      description: `Artisanal ${name} crafted with quiet refinement.`,
+    });
+    setCategories(updated);
+    const targetCat = updated.find((c) => c.slug === slug);
+    const defaultSub = targetCat?.subcategories?.[0]?.slug || 'general';
+    setFormData((prev) => ({
+      ...prev,
+      mainCategory: slug,
+      subcategory: defaultSub,
+    }));
+    setInlineCategoryName('');
+    setIsAddingInlineCategory(false);
+  };
+
+  // Quick Inline Subcategory creation directly inside Add Product modal
+  const handleQuickAddInlineSubcategory = () => {
+    const name = inlineSubcategoryName.trim();
+    if (!name) return;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const updated = addCustomSubcategory(formData.mainCategory, {
+      name,
+      slug,
+      description: `Refined ${name} collection`,
+    });
+    setCategories(updated);
+    setFormData((prev) => ({
+      ...prev,
+      subcategory: slug,
+    }));
+    setInlineSubcategoryName('');
+    setIsAddingInlineSubcategory(false);
   };
 
   const handleDeleteCategory = (catSlug: string) => {
@@ -602,20 +650,25 @@ export default function AdminProductsPage() {
 
       {/* CATEGORY & SUBCATEGORY MANAGEMENT MODAL */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#141213] border border-[#242022] rounded-lg w-full max-w-3xl p-6 space-y-6 my-8 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-[#242022] pb-4">
+        <div className="fixed inset-0 z-[70] bg-[#0D0C0C]/85 backdrop-blur-sm flex items-start justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-[#141213] border border-[#242022] rounded-xl w-full max-w-3xl my-2 sm:my-6 max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden">
+            {/* Modal Sticky Header */}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#242022] bg-[#141213] shrink-0 z-10">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#E9C9CE]" />
-                <h3 className="font-serif text-xl text-[#FFFFFF]">Manage Categories & Subcategories</h3>
+                <h3 className="font-serif text-lg sm:text-xl text-[#FFFFFF]">Manage Categories & Subcategories</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1 cursor-pointer"
+                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1.5 rounded-lg hover:bg-[#1A1718] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
 
             {/* Tabs switcher */}
             <div className="flex border-b border-[#242022] gap-4 text-xs font-mono uppercase tracking-wider">
@@ -881,7 +934,10 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            <div className="text-right border-t border-[#242022] pt-4">
+            </div>
+
+            {/* Modal Sticky Footer */}
+            <div className="px-4 sm:px-6 py-3 border-t border-[#242022] bg-[#141213] text-right shrink-0 z-10">
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
@@ -896,26 +952,29 @@ export default function AdminProductsPage() {
 
       {/* ADD / EDIT PRODUCT MODAL (with Multi-Image, Brand, Color, Size & Dynamic Categories) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#141213] border border-[#242022] rounded-lg w-full max-w-2xl p-6 space-y-5 my-8 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-[#242022] pb-4">
+        <div className="fixed inset-0 z-50 bg-[#0D0C0C]/85 backdrop-blur-sm flex items-start justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-[#141213] border border-[#242022] rounded-xl w-full max-w-3xl my-2 sm:my-6 max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden">
+            {/* Modal Sticky Header - Always visible on all screens */}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#242022] bg-[#141213] shrink-0 z-10">
               <div>
-                <h3 className="font-serif text-lg text-[#FFFFFF]">
+                <h3 className="font-serif text-base sm:text-lg text-[#FFFFFF]">
                   {formData.id ? 'Edit Product Details' : 'Add New Product to Catalog'}
                 </h3>
-                <p className="text-[11px] text-[#7A7375] mt-0.5">
+                <p className="text-[11px] text-[#7A7375] mt-0.5 hidden sm:block">
                   Configure title, brand, colors, sizes, dynamic category, and multi-image gallery.
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1 cursor-pointer"
+                className="text-[#7A7375] hover:text-[#FFFFFF] transition-colors p-1.5 rounded-lg hover:bg-[#1A1718] cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4 text-xs">
+            <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs">
               {/* Product Code & Product Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -1037,26 +1096,80 @@ export default function AdminProductsPage() {
 
               {/* Dynamic Main Category & Subcategory Selectors */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
+                {/* MAIN CATEGORY */}
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[#B0A7A9] font-medium">Main Category *</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCategoryModalOpen(true);
-                        setCategoryModalTab('main');
-                      }}
-                      className="text-[10px] text-[#E9C9CE] hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      + Add New Category
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingInlineCategory(!isAddingInlineCategory)}
+                        className="text-[11px] text-[#E9C9CE] font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-[#262123] px-2 py-0.5 rounded border border-[#3A3134]"
+                      >
+                        {isAddingInlineCategory ? '✕ Close' : '+ Quick Add'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCategoryModalOpen(true);
+                          setCategoryModalTab('main');
+                        }}
+                        className="text-[10px] text-[#7A7375] hover:text-[#FFFFFF] underline cursor-pointer"
+                        title="Open Full Category Manager"
+                      >
+                        Manager
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Inline Category Quick Add Input */}
+                  {isAddingInlineCategory && (
+                    <div className="p-2.5 bg-[#262123] border border-[#E9C9CE] rounded-lg space-y-2 animate-in fade-in shadow-inner">
+                      <div className="text-[10px] uppercase font-mono text-[#E9C9CE] font-semibold">
+                        Enter New Category Name:
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={inlineCategoryName}
+                          onChange={(e) => setInlineCategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleQuickAddInlineCategory();
+                            }
+                          }}
+                          placeholder="e.g. Fragrances, Watches, Shoes"
+                          className="flex-1 bg-[#141213] border border-[#3A3134] focus:border-[#E9C9CE] text-[#FCFAF9] p-2 rounded text-xs focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleQuickAddInlineCategory}
+                          className="px-3 py-2 bg-[#E9C9CE] text-[#171515] font-semibold rounded text-xs hover:bg-[#F3D7DC] transition-colors shrink-0 cursor-pointer"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingInlineCategory(false);
+                            setInlineCategoryName('');
+                          }}
+                          className="p-2 text-[#7A7375] hover:text-[#FFFFFF] cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <select
                     value={formData.mainCategory}
                     onChange={(e) => {
                       const newMain = e.target.value;
                       const matchedCat = categories.find((c) => c.slug === newMain);
-                      const defaultSub = matchedCat?.subcategories?.[0]?.slug || 'makeup';
+                      const defaultSub = matchedCat?.subcategories?.[0]?.slug || 'general';
                       setFormData({ ...formData, mainCategory: newMain, subcategory: defaultSub });
                     }}
                     className="w-full bg-[#1A1718] border border-[#2B2527] text-[#FCFAF9] p-2.5 rounded focus:outline-none"
@@ -1069,20 +1182,74 @@ export default function AdminProductsPage() {
                   </select>
                 </div>
 
-                <div className="space-y-1">
+                {/* SUBCATEGORY */}
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[#B0A7A9] font-medium">Subcategory *</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCategoryModalOpen(true);
-                        setCategoryModalTab('sub');
-                      }}
-                      className="text-[10px] text-[#E9C9CE] hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      + Add New Subcategory
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingInlineSubcategory(!isAddingInlineSubcategory)}
+                        className="text-[11px] text-[#E9C9CE] font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-[#262123] px-2 py-0.5 rounded border border-[#3A3134]"
+                      >
+                        {isAddingInlineSubcategory ? '✕ Close' : '+ Quick Add'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCategoryModalOpen(true);
+                          setCategoryModalTab('sub');
+                        }}
+                        className="text-[10px] text-[#7A7375] hover:text-[#FFFFFF] underline cursor-pointer"
+                        title="Open Full Subcategory Manager"
+                      >
+                        Manager
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Inline Subcategory Quick Add Input */}
+                  {isAddingInlineSubcategory && (
+                    <div className="p-2.5 bg-[#262123] border border-[#E9C9CE] rounded-lg space-y-2 animate-in fade-in shadow-inner">
+                      <div className="text-[10px] uppercase font-mono text-[#E9C9CE] font-semibold">
+                        New Subcategory in &ldquo;{currentCategoryObj?.name || formData.mainCategory}&rdquo;:
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={inlineSubcategoryName}
+                          onChange={(e) => setInlineSubcategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleQuickAddInlineSubcategory();
+                            }
+                          }}
+                          placeholder="e.g. Eau de Parfum, Cologne, Silk Scarves"
+                          className="flex-1 bg-[#141213] border border-[#3A3134] focus:border-[#E9C9CE] text-[#FCFAF9] p-2 rounded text-xs focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleQuickAddInlineSubcategory}
+                          className="px-3 py-2 bg-[#E9C9CE] text-[#171515] font-semibold rounded text-xs hover:bg-[#F3D7DC] transition-colors shrink-0 cursor-pointer"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingInlineSubcategory(false);
+                            setInlineSubcategoryName('');
+                          }}
+                          className="p-2 text-[#7A7375] hover:text-[#FFFFFF] cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <select
                     value={formData.subcategory}
                     onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
@@ -1231,21 +1398,28 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#242022]">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-[#1A1718] text-[#B0A7A9] rounded hover:text-[#FFFFFF] transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#E9C9CE] text-[#171515] font-semibold rounded hover:bg-[#F3D7DC] transition-colors cursor-pointer shadow-md"
-                >
-                  Save Product to Store
-                </button>
+              </div>
+
+              {/* Modal Sticky Footer - Always accessible */}
+              <div className="px-4 sm:px-6 py-3 border-t border-[#242022] bg-[#141213] flex items-center justify-between gap-3 shrink-0 z-10">
+                <span className="text-[11px] text-[#7A7375] font-mono hidden sm:inline">
+                  {formData.images.length} image{formData.images.length === 1 ? '' : 's'} attached
+                </span>
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 bg-[#1A1718] text-[#B0A7A9] rounded-lg hover:text-[#FFFFFF] transition-colors cursor-pointer text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-[#E9C9CE] text-[#171515] font-semibold rounded-lg hover:bg-[#F3D7DC] transition-colors cursor-pointer shadow-md text-xs"
+                  >
+                    Save Product to Store
+                  </button>
+                </div>
               </div>
             </form>
           </div>
