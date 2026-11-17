@@ -9,6 +9,18 @@ import { usePathname } from 'next/navigation';
 export default function TopAnnouncementBar() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(true);
+  const [announcementText, setAnnouncementText] = useState(
+    'Deals & Discounts: Bridal, Party & Makeup Suites (Save up to 35%)'
+  );
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('elegant_announcement_text');
+      if (stored) setAnnouncementText(stored);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   if (pathname?.startsWith('/admin') || !isVisible) return null;
 
@@ -20,7 +32,7 @@ export default function TopAnnouncementBar() {
           className="flex items-center gap-1.5 text-[#E9C9CE] hover:text-[#FFFFFF] transition-colors"
         >
           <Sparkles className="w-3 h-3 text-[#E9C9CE] animate-pulse" />
-          <span className="font-medium">Deals & Discounts: Bridal, Party & Makeup Suites (Save up to 35%)</span>
+          <span className="font-medium">{announcementText}</span>
         </Link>
 
         <span className="hidden md:inline text-[#4D4547]">•</span>

@@ -86,7 +86,7 @@ export default function Header() {
 
         {/* Center / Nav Items (Desktop) */}
         <nav className="hidden lg:flex items-center gap-3.5 xl:gap-6 text-[11px] xl:text-xs uppercase tracking-[0.12em] xl:tracking-[0.16em] font-sans text-[#171515] whitespace-nowrap">
-          {/* Deals & Discounts Dropdown */}
+          {/* 1. Deals & Discounts Dropdown */}
           <div
             className="relative py-2 group"
             onMouseEnter={() => setActiveDropdown('deals')}
@@ -103,7 +103,7 @@ export default function Header() {
             </Link>
 
             {activeDropdown === 'deals' && (
-              <div className="absolute top-full left-0 w-72 bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+              <div className="absolute top-full left-0 w-80 bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                 <div className="text-[10px] text-[#C58C97] tracking-widest border-b border-[#ECE7E6] pb-2 font-medium flex items-center justify-between">
                   <span>CURATED SUITES</span>
                   <span>SAVE UP TO 35%</span>
@@ -142,7 +142,7 @@ export default function Header() {
                     href="/deals"
                     className="text-[11px] uppercase tracking-widest text-[#171515] hover:text-[#C58C97] transition-colors font-medium flex items-center justify-between"
                   >
-                    <span>View All Privileges</span>
+                    <span>View All Deals & Privileges</span>
                     <span>→</span>
                   </Link>
                 </div>
@@ -150,89 +150,317 @@ export default function Header() {
             )}
           </div>
 
-          {/* Dynamic Categories & Subcategories Dropdown */}
+          {/* 2. WOMEN Dropdown (Categories & Subcategories Established Under Women) */}
           <div
             className="relative py-2 group"
-            onMouseEnter={() => setActiveDropdown('categories')}
+            onMouseEnter={() => setActiveDropdown('women')}
             onMouseLeave={() => setActiveDropdown(null)}
           >
-            <div
-              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium cursor-pointer ${
-                activeDropdown === 'categories' ? 'text-[#C58C97]' : ''
+            <Link
+              href="/women"
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium ${
+                pathname.startsWith('/women') ? 'border-b border-[#171515] pb-0.5 text-[#C58C97]' : ''
               }`}
             >
-              <span>Collections</span>
+              <span>Women</span>
               <ChevronDown className="w-3 h-3 text-[#171515] group-hover:text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
-            </div>
+            </Link>
 
-            {activeDropdown === 'categories' && (
-              <div className="absolute top-full left-0 min-w-[500px] bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-                {categories.map((cat) => (
-                  <div key={cat.slug} className="space-y-2.5">
+            {activeDropdown === 'women' && (
+              <div className="absolute top-full left-0 min-w-[540px] bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Beauty & Cosmetics</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Women</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/women/makeup"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Makeup & Lipsticks
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/women/skin-care"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Botanical Skin Care & Elixirs
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Fashion & Leather Goods</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Women</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/women/hand-bags"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Calfskin Handbags
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/women/belts"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Leather Belts
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/women/wallets"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Compact Wallets
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Dynamic custom categories */}
+                {categories.filter(c => !['beauty', 'fashion'].includes(c.slug)).map((cat) => (
+                  <div key={cat.slug} className="space-y-2 col-span-2 pt-2 border-t border-[#ECE7E6]">
                     <Link
-                      href={`/${cat.slug}`}
-                      className="font-serif text-sm font-medium text-[#171515] hover:text-[#C58C97] transition-colors flex items-center justify-between border-b border-[#ECE7E6] pb-1.5"
+                      href={`/women/${cat.slug}`}
+                      className="font-serif text-sm font-medium text-[#171515] hover:text-[#C58C97] flex items-center justify-between"
                     >
                       <span>{cat.name}</span>
-                      <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Explore →</span>
+                      <span className="text-[9px] font-sans text-[#C58C97]">Explore →</span>
                     </Link>
-                    <ul className="space-y-1.5 text-xs text-[#6E6767] font-normal normal-case">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#6E6767]">
                       {cat.subcategories.map((sub) => (
-                        <li key={sub.slug}>
-                          <Link
-                            href={`/${cat.slug}/${sub.slug}`}
-                            className="hover:text-[#171515] hover:translate-x-0.5 transition-all block py-0.5"
-                          >
-                            {sub.name}
-                          </Link>
-                        </li>
+                        <Link
+                          key={sub.slug}
+                          href={`/women/${sub.slug}`}
+                          className="hover:text-[#171515]"
+                        >
+                          {sub.name}
+                        </Link>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 ))}
+
+                <div className="col-span-2 pt-3 border-t border-[#ECE7E6]">
+                  <Link
+                    href="/women"
+                    className="text-[11px] uppercase tracking-widest text-[#171515] hover:text-[#C58C97] font-medium flex items-center justify-between"
+                  >
+                    <span>Explore All Women Realm</span>
+                    <span>→</span>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
 
-
-
-          {/* Audiences */}
-          <Link
-            href="/women"
-            className={`transition-colors hover:text-[#6E6767] py-1 ${
-              pathname.startsWith('/women') ? 'border-b border-[#171515] pb-0.5' : ''
-            }`}
+          {/* 3. MEN Dropdown (Categories & Subcategories Established Under Men) */}
+          <div
+            className="relative py-2 group"
+            onMouseEnter={() => setActiveDropdown('men')}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
-            Women
-          </Link>
+            <Link
+              href="/men"
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium ${
+                pathname.startsWith('/men') ? 'border-b border-[#171515] pb-0.5 text-[#C58C97]' : ''
+              }`}
+            >
+              <span>Men</span>
+              <ChevronDown className="w-3 h-3 text-[#171515] group-hover:text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
+            </Link>
 
-          <Link
-            href="/men"
-            className={`transition-colors hover:text-[#6E6767] py-1 ${
-              pathname.startsWith('/men') ? 'border-b border-[#171515] pb-0.5' : ''
-            }`}
-          >
-            Men
-          </Link>
+            {activeDropdown === 'men' && (
+              <div className="absolute top-full left-0 min-w-[480px] bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Leather Goods</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Men</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/men/belts"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Hand-Woven Calfskin Belts
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/men/wallets"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Saddle Leather Wallets
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
 
-          <Link
-            href="/children"
-            className={`transition-colors hover:text-[#6E6767] py-1 ${
-              pathname.startsWith('/children') ? 'border-b border-[#171515] pb-0.5' : ''
-            }`}
-          >
-            Children
-          </Link>
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Grooming & Care</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Men</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/men/skin-care"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Botanical Cleansers & Face Fluid
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
 
-          {/* Reviews & Suggestions Link */}
-          <Link
-            href="/reviews-suggestions"
-            className={`transition-colors hover:text-[#6E6767] py-1 ${
-              pathname.startsWith('/reviews-suggestions') ? 'border-b border-[#171515] pb-0.5' : ''
-            }`}
+                <div className="col-span-2 pt-3 border-t border-[#ECE7E6]">
+                  <Link
+                    href="/men"
+                    className="text-[11px] uppercase tracking-widest text-[#171515] hover:text-[#C58C97] font-medium flex items-center justify-between"
+                  >
+                    <span>Explore All Men Collection</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. CHILDREN Dropdown (Categories & Subcategories Established Under Children) */}
+          <div
+            className="relative py-2 group"
+            onMouseEnter={() => setActiveDropdown('children')}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
-            Reviews & Suggestions
-          </Link>
+            <Link
+              href="/children"
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium ${
+                pathname.startsWith('/children') ? 'border-b border-[#171515] pb-0.5 text-[#C58C97]' : ''
+              }`}
+            >
+              <span>Children</span>
+              <ChevronDown className="w-3 h-3 text-[#171515] group-hover:text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
+            </Link>
+
+            {activeDropdown === 'children' && (
+              <div className="absolute top-full left-0 min-w-[480px] bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-6 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Gentle Pure Care</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Child</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/children/skin-care"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Soothing Balms & Oat Cleansers
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/children/hair-care"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Tear-Free Botanical Shampoos
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="font-serif text-sm font-medium text-[#171515] border-b border-[#ECE7E6] pb-1.5 flex items-center justify-between">
+                    <span>Accessories</span>
+                    <span className="text-[9px] font-sans text-[#C58C97] uppercase tracking-widest">Child</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                    <li>
+                      <Link
+                        href="/children/school-belts"
+                        className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                      >
+                        Reinforced School Belts
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="col-span-2 pt-3 border-t border-[#ECE7E6]">
+                  <Link
+                    href="/children"
+                    className="text-[11px] uppercase tracking-widest text-[#171515] hover:text-[#C58C97] font-medium flex items-center justify-between"
+                  >
+                    <span>Explore All Children Line</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. Reviews & Suggestions Dropdown */}
+          <div
+            className="relative py-2 group"
+            onMouseEnter={() => setActiveDropdown('reviews')}
+            onMouseLeave={() => setActiveDropdown(null)}
+          >
+            <Link
+              href="/reviews-suggestions"
+              className={`flex items-center gap-1 transition-colors hover:text-[#C58C97] py-1 text-[#171515] font-medium ${
+                pathname.startsWith('/reviews-suggestions') || pathname.startsWith('/delivery-period') || pathname.startsWith('/return-policy')
+                  ? 'border-b border-[#171515] pb-0.5 text-[#C58C97]'
+                  : ''
+              }`}
+            >
+              <span>Reviews & Suggestions</span>
+              <ChevronDown className="w-3 h-3 text-[#171515] group-hover:text-[#C58C97] transition-transform duration-200 group-hover:rotate-180" />
+            </Link>
+
+            {activeDropdown === 'reviews' && (
+              <div className="absolute top-full right-0 w-64 bg-[#FFFFFF] border border-[#ECE7E6] shadow-xl p-5 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="text-[10px] text-[#C58C97] tracking-widest border-b border-[#ECE7E6] pb-1.5 font-medium">
+                  CLIENT SERVICES & FEEDBACK
+                </div>
+                <ul className="space-y-2 text-xs text-[#6E6767] font-normal normal-case">
+                  <li>
+                    <Link
+                      href="/reviews-suggestions"
+                      className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                    >
+                      Client Testimonials & Feedback
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/delivery-period"
+                      className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                    >
+                      Delivery Period (Pakistan Express)
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/return-policy"
+                      className="hover:text-[#171515] hover:translate-x-0.5 transition-all block font-serif text-[13px]"
+                    >
+                      Return & Exchange Policy
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Right / Actions */}

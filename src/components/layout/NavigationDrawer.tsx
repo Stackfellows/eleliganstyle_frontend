@@ -100,39 +100,86 @@ export default function NavigationDrawer() {
                   </div>
                 </div>
 
-                {/* DYNAMIC CATEGORIES & SUBCATEGORIES */}
-                <div className="space-y-4">
-                  <span className="block text-[10px] font-sans font-medium tracking-[0.25em] text-[#6E6767] uppercase mb-2">
-                    COLLECTIONS & SUITES
-                  </span>
+                {/* WOMEN SECTION & SUBCATEGORIES */}
+                <div className="space-y-2 border-b border-[#ECE7E6]/60 pb-3">
+                  <Link
+                    href="/women"
+                    onClick={closeMobileNav}
+                    className="flex items-center justify-between text-lg font-serif font-medium text-[#171515] hover:text-[#C58C97]"
+                  >
+                    <span>Women Collection</span>
+                    <ArrowRight className="w-4 h-4 text-[#C58C97]" />
+                  </Link>
+                  <div className="pl-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-sans text-[#6E6767]">
+                    <Link href="/women/makeup" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Makeup
+                    </Link>
+                    <span>•</span>
+                    <Link href="/women/skin-care" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Skin Care
+                    </Link>
+                    <span>•</span>
+                    <Link href="/women/hand-bags" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Handbags
+                    </Link>
+                    <span>•</span>
+                    <Link href="/women/belts" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Belts
+                    </Link>
+                    <span>•</span>
+                    <Link href="/women/wallets" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Wallets
+                    </Link>
+                  </div>
+                </div>
 
-                  <div className="space-y-3">
-                    {categories.map((cat) => (
-                      <div key={cat.slug} className="border-b border-[#ECE7E6]/60 pb-2.5 space-y-1.5">
-                        <Link
-                          href={`/${cat.slug}`}
-                          onClick={closeMobileNav}
-                          className="flex items-center justify-between text-base font-serif font-medium text-[#171515] hover:text-[#C58C97] transition-colors"
-                        >
-                          <span>{cat.name}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-[#C58C97]" />
-                        </Link>
-                        {cat.subcategories && cat.subcategories.length > 0 && (
-                          <div className="pl-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-sans text-[#6E6767]">
-                            {cat.subcategories.map((sub) => (
-                              <Link
-                                key={sub.slug}
-                                href={`/${cat.slug}/${sub.slug}`}
-                                onClick={closeMobileNav}
-                                className="hover:text-[#171515] transition-colors py-0.5"
-                              >
-                                {sub.name}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                {/* MEN SECTION & SUBCATEGORIES */}
+                <div className="space-y-2 border-b border-[#ECE7E6]/60 pb-3">
+                  <Link
+                    href="/men"
+                    onClick={closeMobileNav}
+                    className="flex items-center justify-between text-lg font-serif font-medium text-[#171515] hover:text-[#C58C97]"
+                  >
+                    <span>Men Collection</span>
+                    <ArrowRight className="w-4 h-4 text-[#C58C97]" />
+                  </Link>
+                  <div className="pl-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-sans text-[#6E6767]">
+                    <Link href="/men/belts" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Calfskin Belts
+                    </Link>
+                    <span>•</span>
+                    <Link href="/men/wallets" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Leather Wallets
+                    </Link>
+                    <span>•</span>
+                    <Link href="/men/skin-care" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Grooming & Skin
+                    </Link>
+                  </div>
+                </div>
+
+                {/* CHILDREN SECTION & SUBCATEGORIES */}
+                <div className="space-y-2 border-b border-[#ECE7E6]/60 pb-3">
+                  <Link
+                    href="/children"
+                    onClick={closeMobileNav}
+                    className="flex items-center justify-between text-lg font-serif font-medium text-[#171515] hover:text-[#C58C97]"
+                  >
+                    <span>Children Line</span>
+                    <ArrowRight className="w-4 h-4 text-[#C58C97]" />
+                  </Link>
+                  <div className="pl-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-sans text-[#6E6767]">
+                    <Link href="/children/skin-care" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Botanical Baby Care
+                    </Link>
+                    <span>•</span>
+                    <Link href="/children/hair-care" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      Gentle Shampoos
+                    </Link>
+                    <span>•</span>
+                    <Link href="/children/school-belts" onClick={closeMobileNav} className="hover:text-[#171515] py-0.5">
+                      School Belts
+                    </Link>
                   </div>
                 </div>
 

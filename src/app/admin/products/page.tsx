@@ -19,7 +19,9 @@ import {
   FolderPlus,
   Tag,
   Palette,
-  Maximize2
+  Maximize2,
+  Globe,
+  Megaphone
 } from 'lucide-react';
 import { Product, MainCategory, SubCategory, Audience, Category } from '@/lib/types';
 import {
@@ -38,6 +40,12 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMainCat, setSelectedMainCat] = useState<string>('all');
   const [selectedSubCat, setSelectedSubCat] = useState<string>('all');
+  const [selectedAudienceFilter, setSelectedAudienceFilter] = useState<string>('all');
+
+  // Manual Announcement Bar Text state (from Docx: How to change this text)
+  const [announcementText, setAnnouncementText] = useState('Deals & Discounts: Bridal, Party & Makeup Suites (Save up to 35%)');
+  const [isEditingAnnouncement, setIsEditingAnnouncement] = useState(false);
+  const [tempAnnouncement, setTempAnnouncement] = useState('');
   
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +73,7 @@ export default function AdminProductsPage() {
   const [newSubDescription, setNewSubDescription] = useState('');
   const [newSubImage, setNewSubImage] = useState('');
 
-  // Form State with Multi-Image Support & Brand / Color / Size
+  // Form State with Multi-Image Support & Brand / Color / Size / Target Pages
   const [formData, setFormData] = useState<{
     id?: string;
     productCode: string;
@@ -80,6 +88,7 @@ export default function AdminProductsPage() {
     discount: string;
     mainCategory: MainCategory;
     subcategory: SubCategory;
+    targetPages: Array<'women' | 'men' | 'children' | 'deals'>;
     audience: Audience[];
     badge: 'NEW' | 'BEST SELLER' | 'LIMITED' | 'AWARD WINNER' | '';
     images: string[];
@@ -97,6 +106,7 @@ export default function AdminProductsPage() {
     discount: '',
     mainCategory: 'beauty',
     subcategory: 'makeup',
+    targetPages: ['women'],
     audience: ['women'],
     badge: 'NEW',
     images: [
@@ -111,6 +121,12 @@ export default function AdminProductsPage() {
   useEffect(() => {
     setProducts(getStoredProducts());
     setCategories(getStoredCategories());
+    try {
+      const storedAnn = localStorage.getItem('elegant_announcement_text');
+      if (storedAnn) setAnnouncementText(storedAnn);
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   // Update targetParentSlug default when categories load
@@ -120,8 +136,21 @@ export default function AdminProductsPage() {
     }
   }, [categories, targetParentSlug]);
 
+  const handleSaveAnnouncement = () => {
+    if (!tempAnnouncement.trim()) return;
+    setAnnouncementText(tempAnnouncement.trim());
+    try {
+      localStorage.setItem('elegant_announcement_text', tempAnnouncement.trim());
+    } catch (e) {
+      console.error(e);
+    }
+    setIsEditingAnnouncement(false);
+    alert('Announcement bar text updated live across the storefront!');
+  };
+
   const handleOpenModal = (prod?: Product) => {
     if (prod) {
+      const prodPages: Array<'women' | 'men' | 'children' | 'deals'> = (prod.audience || ['women']).map((a) => a as any);
       setFormData({
         id: prod.id,
         productCode: prod.productCode || `ELG-${prod.id.toUpperCase()}`,
@@ -136,6 +165,7 @@ export default function AdminProductsPage() {
         discount: prod.discount ? prod.discount.toString() : (prod.originalPrice && prod.originalPrice > prod.price ? Math.round(((prod.originalPrice - prod.price) / prod.originalPrice) * 100).toString() : ''),
         mainCategory: prod.mainCategory,
         subcategory: prod.subcategory,
+        targetPages: prodPages.length > 0 ? prodPages : ['women'],
         audience: prod.audience || ['women'],
         badge: prod.badge || '',
         images: prod.images && prod.images.length > 0 ? prod.images : ['https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200&auto=format&fit=crop'],
@@ -159,6 +189,7 @@ export default function AdminProductsPage() {
         discount: '15',
         mainCategory: firstCat,
         subcategory: firstSub,
+        targetPages: ['women'],
         audience: ['women'],
         badge: 'NEW',
         images: [
@@ -193,6 +224,8 @@ export default function AdminProductsPage() {
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const finalAudience: Audience[] = formData.targetPages.length > 0 ? (formData.targetPages as Audience[]) : ['women'];
+
     const newProd: Product = {
       id: formData.id || `prod-${Date.now()}`,
       productCode: formData.productCode || `ELG-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -210,7 +243,7 @@ export default function AdminProductsPage() {
       reviewCount: 1,
       mainCategory: formData.mainCategory,
       subcategory: formData.subcategory,
-      audience: formData.audience,
+      audience: finalAudience,
       badge: (formData.badge as any) || undefined,
       images: finalImages,
       details: formData.details ? formData.details.split('\n') : ['High luxury craftsmanship'],
@@ -399,11 +432,70 @@ export default function AdminProductsPage() {
       (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesMain = selectedMainCat === 'all' || p.mainCategory === selectedMainCat;
     const matchesSub = selectedSubCat === 'all' || p.subcategory === selectedSubCat;
-    return matchesSearch && matchesMain && matchesSub;
+    const matchesAudience =
+      selectedAudienceFilter === 'all' ||
+      (p.audience && p.audience.includes(selectedAudienceFilter as any));
+    return matchesSearch && matchesMain && matchesSub && matchesAudience;
   });
 
   return (
     <div className="space-y-6 font-sans">
+      {/* Top Announcement Bar Manual Editor Banner (Elegant Style (2).docx Image 1) */}
+      <div className="bg-[#1A1718] border border-[#2B2527] rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#E9C9CE]/15 border border-[#E9C9CE]/30 flex items-center justify-center shrink-0">
+            <Megaphone className="w-4 h-4 text-[#E9C9CE]" />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-mono tracking-wider text-[#E9C9CE] font-semibold">
+              Top Announcement Bar (Change Text Manually)
+            </div>
+            {isEditingAnnouncement ? (
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <input
+                  type="text"
+                  value={tempAnnouncement}
+                  onChange={(e) => setTempAnnouncement(e.target.value)}
+                  className="bg-[#141213] border border-[#E9C9CE] text-[#FCFAF9] text-xs px-2.5 py-1.5 rounded w-72 sm:w-96 focus:outline-none"
+                  placeholder="Enter storefront announcement..."
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveAnnouncement}
+                  className="px-3 py-1.5 bg-[#E9C9CE] text-[#171515] font-semibold text-xs rounded hover:bg-[#F3D7DC] transition-colors cursor-pointer"
+                >
+                  Save Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAnnouncement(false)}
+                  className="px-2 py-1.5 text-[#7A7375] hover:text-[#FFFFFF] text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs text-[#FCFAF9] font-medium mt-0.5">
+                &ldquo;{announcementText}&rdquo;
+              </div>
+            )}
+          </div>
+        </div>
+        {!isEditingAnnouncement && (
+          <button
+            type="button"
+            onClick={() => {
+              setTempAnnouncement(announcementText);
+              setIsEditingAnnouncement(true);
+            }}
+            className="px-3 py-1.5 bg-[#262123] border border-[#3A3134] text-[#E9C9CE] text-xs rounded hover:border-[#E9C9CE] transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <Edit className="w-3.5 h-3.5" />
+            <span>Change Text Manually</span>
+          </button>
+        )}
+      </div>
+
       {/* Top Title Bar & Category Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#242022] pb-6">
         <div>
@@ -413,7 +505,7 @@ export default function AdminProductsPage() {
           </div>
           <h1 className="font-serif text-2xl text-[#FFFFFF]">Products & Categories</h1>
           <p className="text-xs text-[#7A7375]">
-            Add & manage products with multi-image upload, Brand, Color, Size, and custom Categories/Subcategories.
+            Add & manage products with target page placement, brand, colors, sizes, and custom categories.
           </p>
         </div>
 
@@ -439,15 +531,29 @@ export default function AdminProductsPage() {
 
       {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-[#141213] border border-[#242022] p-4 rounded-lg">
-        <div className="md:col-span-5 relative">
+        <div className="md:col-span-4 relative">
           <Search className="w-3.5 h-3.5 text-[#7A7375] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by product name, brand, subcategory..."
+            placeholder="Search by name, brand, subcategory..."
             className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] placeholder-[#6B6466] pl-9 pr-4 py-2 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
           />
+        </div>
+
+        <div className="md:col-span-2">
+          <select
+            value={selectedAudienceFilter}
+            onChange={(e) => setSelectedAudienceFilter(e.target.value)}
+            className="w-full bg-[#1A1718] text-xs text-[#FCFAF9] py-2 px-3 rounded border border-[#2B2527] focus:outline-none focus:border-[#E9C9CE]"
+          >
+            <option value="all">All Pages (Women, Men, Children, Deals)</option>
+            <option value="women">Women Page</option>
+            <option value="men">Men Page</option>
+            <option value="children">Children Page</option>
+            <option value="deals">Deals & Discounts</option>
+          </select>
         </div>
 
         <div className="md:col-span-3">
@@ -465,7 +571,7 @@ export default function AdminProductsPage() {
           </select>
         </div>
 
-        <div className="md:col-span-4">
+        <div className="md:col-span-3">
           <select
             value={selectedSubCat}
             onChange={(e) => setSelectedSubCat(e.target.value)}
@@ -491,6 +597,7 @@ export default function AdminProductsPage() {
               <tr>
                 <th className="p-3.5">Images (2-3)</th>
                 <th className="p-3.5">Product Details & Brand</th>
+                <th className="p-3.5">Target Page</th>
                 <th className="p-3.5">Category</th>
                 <th className="p-3.5">Subcategory</th>
                 <th className="p-3.5">Colors & Sizes</th>
@@ -504,7 +611,7 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-[#242022]">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-xs text-[#7A7375]">
+                  <td colSpan={11} className="p-8 text-center text-xs text-[#7A7375]">
                     No products found matching filters.
                   </td>
                 </tr>
@@ -539,6 +646,28 @@ export default function AdminProductsPage() {
                         <span className="text-[10px] text-[#7A7375] font-mono">
                           {prod.productCode || `ELG-${prod.id.slice(-4).toUpperCase()}`}
                         </span>
+                      </div>
+                    </td>
+
+                    {/* Target Page / Audience (Docx Image 4, 5) */}
+                    <td className="p-3.5">
+                      <div className="flex flex-wrap gap-1 max-w-[130px]">
+                        {(prod.audience || ['women']).map((aud) => (
+                          <span
+                            key={aud}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase font-semibold ${
+                              aud === 'women'
+                                ? 'bg-[#E9C9CE]/20 text-[#E9C9CE] border border-[#E9C9CE]/40'
+                                : aud === 'men'
+                                ? 'bg-sky-950/60 text-sky-300 border border-sky-800/60'
+                                : aud === 'children'
+                                ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                                : 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60'
+                            }`}
+                          >
+                            {aud}
+                          </span>
+                        ))}
                       </div>
                     </td>
 
@@ -1091,6 +1220,70 @@ export default function AdminProductsPage() {
                         ))}
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* TARGET PAGE PLACEMENT & DYNAMIC WEBSITE PATH (Per Elegant Style (2).docx Images 4, 5, 6) */}
+              <div className="bg-[#1A1718] p-3.5 rounded-lg border border-[#2B2527] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label className="text-[#B0A7A9] font-medium flex items-center gap-1.5 text-[#E9C9CE]">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Select Target Page(s) on Website *</span>
+                  </label>
+                  <span className="text-[10px] text-[#7A7375]">
+                    Where this product will appear (Women, Men, Children, Deals)
+                  </span>
+                </div>
+
+                {/* Target Page Pill Selectors */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'women', label: 'Women', route: '/women' },
+                    { id: 'men', label: 'Men', route: '/men' },
+                    { id: 'children', label: 'Children', route: '/children' },
+                    { id: 'deals', label: 'Deals & Discounts', route: '/deals' },
+                  ].map((page) => {
+                    const isSelected = formData.targetPages.includes(page.id as any);
+                    return (
+                      <button
+                        key={page.id}
+                        type="button"
+                        onClick={() => {
+                          const exists = formData.targetPages.includes(page.id as any);
+                          const newPages = exists
+                            ? formData.targetPages.filter((p) => p !== page.id)
+                            : [...formData.targetPages, page.id as any];
+                          setFormData({
+                            ...formData,
+                            targetPages: newPages.length > 0 ? newPages : [page.id as any],
+                          });
+                        }}
+                        className={`px-3 py-2 rounded text-xs font-medium flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#E9C9CE]/15 border-[#E9C9CE] text-[#E9C9CE] font-semibold shadow-sm'
+                            : 'bg-[#141213] border-[#2B2527] text-[#7A7375] hover:border-[#3A3134] hover:text-[#B0A7A9]'
+                        }`}
+                      >
+                        <span className="capitalize">{page.label}</span>
+                        <span className="text-[9px] font-mono opacity-60">{page.route}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Dynamic Website Placement Path Preview */}
+                <div className="bg-[#141213] p-2.5 rounded border border-[#2B2527] flex items-center justify-between flex-wrap gap-2 text-[11px]">
+                  <div className="text-[#7A7375] flex items-center gap-1.5 flex-wrap">
+                    <span className="font-mono text-[10px] uppercase text-[#E9C9CE] font-semibold">Website Placement Path Created:</span>
+                    <span className="text-[#FCFAF9] font-medium">
+                      {formData.targetPages.map((p) => p.toUpperCase()).join(' & ')} &gt;{' '}
+                      {categories.find((c) => c.slug === formData.mainCategory)?.name || formData.mainCategory} &gt;{' '}
+                      {formData.subcategory}
+                    </span>
+                  </div>
+                  <div className="text-[#E9C9CE] font-mono text-[10px] bg-[#262123] px-2 py-0.5 rounded border border-[#3A3134]">
+                    /{formData.targetPages[0] || 'women'}/{formData.subcategory}
+                  </div>
                 </div>
               </div>
 

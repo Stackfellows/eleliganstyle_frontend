@@ -11,7 +11,7 @@ export type SubCategory =
   | 'deals'
   | string;
 
-export type Audience = 'women' | 'men' | 'children';
+export type Audience = 'women' | 'men' | 'children' | 'deals';
 
 export interface ProductVariant {
   id: string;
